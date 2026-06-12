@@ -1,0 +1,6 @@
+{
+  "name": "Loco Street League",
+  "description": "A modern mobile app for tracking gully cricket matches with rich stats, live scorecards, match history, and tournament management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
