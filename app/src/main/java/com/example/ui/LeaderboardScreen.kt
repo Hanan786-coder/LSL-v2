@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.CricketScorer
 import com.example.ui.theme.Lsl
 import com.example.ui.theme.Scoreboard
 
@@ -38,17 +39,27 @@ private data class Career(
     val sixes: Int,
     val wickets: Int,
     val conceded: Int,
-    val bowled: Int
+    val bowled: Int,
+    val catches: Int = 0,
+    val runOuts: Int = 0,
+    val stumpings: Int = 0
 ) {
+    val dismissalsInField get() = catches + runOuts + stumpings
     val strikeRate get() = if (balls > 0) runs * 100.0 / balls else 0.0
     val economy get() = if (bowled > 0) conceded / (bowled / 6.0) else 0.0
     val oversString get() = "${bowled / 6}.${bowled % 6}"
 }
 
-private enum class Metric(val label: String, val batting: Boolean) {
-    RUNS("Runs", true), STRIKE("Strike rate", true), SIXES("Sixes", true), FOURS("Fours", true),
-    WICKETS("Wickets", false), ECONOMY("Economy", false)
+private enum class Metric(val label: String, val tab: Int) {
+    RUNS("Runs", 0), STRIKE("Strike rate", 0), SIXES("Sixes", 0), FOURS("Fours", 0),
+    WICKETS("Wickets", 1), ECONOMY("Economy", 1),
+    CATCHES("Catches", 2), RUN_OUTS("Run outs", 2), FIELD_TOTAL("All dismissals", 2);
+
+    val batting get() = tab == 0
 }
+
+/** Catches, run outs and stumpings per player, read from finished matches' ball logs. */
+private data class Fielding(var catches: Int = 0, var runOuts: Int = 0, var stumpings: Int = 0)
 
 @Composable
 fun LeaderboardScreen(
@@ -56,12 +67,30 @@ fun LeaderboardScreen(
     onBack: () -> Unit
 ) {
     val stats by viewModel.playerStats.collectAsState()
+    val matches by viewModel.matches.collectAsState()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var metric by rememberSaveable { mutableStateOf(Metric.RUNS) }
     var query by rememberSaveable { mutableStateOf("") }
 
-    val careers = remember(stats) {
-        stats.groupBy { it.playerName.trim().lowercase() }.map { (_, rows) ->
+    val fielding = remember(matches) {
+        val map = mutableMapOf<String, Fielding>()
+        matches.filter { it.status == "COMPLETED" }.forEach { m ->
+            CricketScorer.parseBalls(m.ballsJson).forEach { b ->
+                val f = b.fielder?.trim()?.takeIf { b.isWicket && it.isNotEmpty() } ?: return@forEach
+                val e = map.getOrPut(f.lowercase()) { Fielding() }
+                when (b.wicketType) {
+                    "CAUGHT" -> e.catches++
+                    "RUN_OUT" -> e.runOuts++
+                    "STUMPED" -> e.stumpings++
+                }
+            }
+        }
+        map
+    }
+
+    val careers = remember(stats, fielding) {
+        stats.groupBy { it.playerName.trim().lowercase() }.map { (key, rows) ->
+            val fd = fielding[key]
             Career(
                 name = rows.first().playerName,
                 teams = rows.map { it.teamName }.distinct(),
@@ -72,7 +101,10 @@ fun LeaderboardScreen(
                 sixes = rows.sumOf { it.sixes },
                 wickets = rows.sumOf { it.wicketsTaken },
                 conceded = rows.sumOf { it.runsConceded },
-                bowled = rows.sumOf { it.ballsBowled }
+                bowled = rows.sumOf { it.ballsBowled },
+                catches = fd?.catches ?: 0,
+                runOuts = fd?.runOuts ?: 0,
+                stumpings = fd?.stumpings ?: 0
             )
         }
     }
@@ -88,20 +120,23 @@ fun LeaderboardScreen(
             Metric.FOURS -> base.filter { it.fours > 0 }.sortedByDescending { it.fours }
             Metric.WICKETS -> base.filter { it.bowled > 0 }.sortedWith(compareByDescending<Career> { it.wickets }.thenBy { it.economy })
             Metric.ECONOMY -> base.filter { it.bowled >= 6 }.sortedBy { it.economy }
+            Metric.CATCHES -> base.filter { it.catches > 0 }.sortedByDescending { it.catches }
+            Metric.RUN_OUTS -> base.filter { it.runOuts > 0 }.sortedByDescending { it.runOuts }
+            Metric.FIELD_TOTAL -> base.filter { it.dismissalsInField > 0 }.sortedByDescending { it.dismissalsInField }
         }
     }
 
     LslScreen(title = "Player stats", subtitle = "Career totals across all matches", onBack = onBack) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            SegmentedTabs(listOf("Batting", "Bowling"), tab) {
+            SegmentedTabs(listOf("Batting", "Bowling", "Fielding"), tab) {
                 tab = it
-                metric = if (it == 0) Metric.RUNS else Metric.WICKETS
+                metric = when (it) { 0 -> Metric.RUNS; 1 -> Metric.WICKETS; else -> Metric.CATCHES }
             }
             Row(
                 Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Metric.entries.filter { it.batting == (tab == 0) }.forEach { m ->
+                Metric.entries.filter { it.tab == tab }.forEach { m ->
                     ChoiceChip(m.label, metric == m, { metric = m })
                 }
             }
@@ -130,6 +165,7 @@ fun LeaderboardScreen(
                         body = when {
                             careers.isEmpty() -> "Finish a match and every batter and bowler gets a career line here."
                             m == Metric.STRIKE || m == Metric.ECONOMY -> "Needs at least one full over (6 balls)."
+                            m.tab == 2 -> "Pick the fielder when you record a catch, run out or stumping and they show up here."
                             else -> "Nobody has one of these yet."
                         },
                         modifier = Modifier.padding(top = 24.dp)
@@ -157,11 +193,14 @@ private fun CareerRow(rank: Int, c: Career, m: Metric) {
         Metric.FOURS -> "${c.fours}" to "fours"
         Metric.WICKETS -> "${c.wickets}" to "wkts"
         Metric.ECONOMY -> c.economy.fmt(2) to "econ"
+        Metric.CATCHES -> "${c.catches}" to "catches"
+        Metric.RUN_OUTS -> "${c.runOuts}" to "run outs"
+        Metric.FIELD_TOTAL -> "${c.dismissalsInField}" to "dismissals"
     }
-    val detail = if (m.batting) {
-        "${c.runs} off ${c.balls}, SR ${c.strikeRate.fmt(0)}, ${c.fours}×4 ${c.sixes}×6"
-    } else {
-        "${c.wickets} for ${c.conceded} in ${c.oversString} ov, econ ${c.economy.fmt(1)}"
+    val detail = when (m.tab) {
+        0 -> "${c.runs} off ${c.balls}, SR ${c.strikeRate.fmt(0)}, ${c.fours}×4 ${c.sixes}×6"
+        1 -> "${c.wickets} for ${c.conceded} in ${c.oversString} ov, econ ${c.economy.fmt(1)}"
+        else -> "${c.catches} ct, ${c.runOuts} ro, ${c.stumpings} st"
     }
     val medal = when (rank) { 0 -> Lsl.Gold; 1 -> Lsl.Chalk; 2 -> Lsl.Bronze; else -> Lsl.Fade }
 
