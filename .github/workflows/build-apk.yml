@@ -1,0 +1,89 @@
+name: Build APK
+
+# Every push to main builds and tests the app and keeps the APK as a workflow artifact.
+# Pushing a version tag (for example `git tag v1.2.0 && git push origin v1.2.0`)
+# also publishes a GitHub Release with the APK attached under Assets.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Updates only install over an existing app when both are signed with the same key.
+      # Store the project's debug.keystore as the SIGNING_KEYSTORE_BASE64 secret so
+      # every release can be installed over the last one without losing data.
+      - name: Restore signing key
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
+            echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > debug.keystore
+            echo "Signing with the repository key."
+          else
+            keytool -genkeypair -keystore debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
+              -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "::warning title=Temporary signing key::SIGNING_KEYSTORE_BASE64 is not set. This APK cannot be installed over an existing copy of the app; see README, Releases."
+          fi
+
+      - name: Run scoring tests
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --tests "com.example.data.CricketScorerTest" --no-daemon
+
+      - name: Build APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Name the APK
+        id: apk
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)-${GITHUB_SHA::7}"
+          fi
+          FILE="LocoStreetLeague-${VERSION}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "### APK ready: \`$FILE\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.file }}
+          path: ${{ steps.apk.outputs.file }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.file }}
+          generate_release_notes: true
