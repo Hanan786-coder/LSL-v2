@@ -44,6 +44,15 @@ fun ScorecardScreen(
     viewModel: LocoViewModel,
     onBackClick: () -> Unit
 ) {
+    val m by viewModel.activeMatch.collectAsState()
+    ProvideSquads(viewModel, m) { ScorecardContent(viewModel, onBackClick) }
+}
+
+@Composable
+private fun ScorecardContent(
+    viewModel: LocoViewModel,
+    onBackClick: () -> Unit
+) {
     val context = LocalContext.current
     val match by viewModel.activeMatch.collectAsState()
     val teams by viewModel.teams.collectAsState()
@@ -172,17 +181,16 @@ private fun SummaryTab(
         if (first.overs.isNotEmpty()) {
             item {
                 Panel {
-                    SectionTitle("Runs per over")
+                    SectionTitle("Run race")
                     Spacer(Modifier.height(10.dp))
-                    ManhattanChart(first.overs, second.overs, match.overs)
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        LegendDot(Lsl.Flame); Text(" $firstName", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1)
-                        Spacer(Modifier.width(14.dp))
-                        LegendDot(Lsl.Gold); Text(" $secondName", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1)
-                        Spacer(Modifier.width(14.dp))
-                        LegendDot(Lsl.Tape); Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
-                    }
+                    RunRaceChart(
+                        firstName = firstName,
+                        secondName = secondName,
+                        first = first.overs,
+                        second = second.overs,
+                        totalOvers = match.overs,
+                        target = match.targetRuns.takeIf { it > 0 }
+                    )
                 }
             }
         }
@@ -284,56 +292,6 @@ private fun PerformerRow(name: String, figure: String, detail: String, icon: and
         Text(name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(figure, fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Lsl.Chalk)
         Text(" $detail", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
-    }
-}
-
-/** Runs-per-over bars for both innings, growing in once when shown. */
-@Composable
-fun ManhattanChart(first: List<OverSummary>, second: List<OverSummary>, totalOvers: Int) {
-    val reduce = rememberReduceMotion()
-    val grow = remember { Animatable(if (reduce) 1f else 0f) }
-    LaunchedEffect(Unit) { grow.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
-    val n = maxOf(totalOvers, first.size, second.size).coerceAtLeast(1)
-    val maxRuns = (first + second).maxOfOrNull { it.runs }?.coerceAtLeast(6) ?: 6
-
-    Column {
-        Canvas(Modifier.fillMaxWidth().height(140.dp)) {
-            val slot = size.width / n
-            val barW = (slot * 0.36f).coerceAtMost(18.dp.toPx())
-            val r = CornerRadius(3.dp.toPx())
-            // Baseline grid every 6 runs
-            var g = 6
-            while (g <= maxRuns) {
-                val y = size.height - size.height * g / maxRuns
-                drawLine(Lsl.Line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
-                g += 6
-            }
-            fun drawSet(list: List<OverSummary>, color: Color, offset: Float) {
-                list.forEach { o ->
-                    val h = size.height * o.runs / maxRuns * grow.value
-                    val x = o.index * slot + slot / 2 + offset
-                    drawRoundRect(color, Offset(x - barW / 2, size.height - h), Size(barW, h), r)
-                    repeat(o.wickets) { w ->
-                        drawCircle(Lsl.Tape, radius = 3.dp.toPx(), center = Offset(x, size.height - h - (6 + w * 8).dp.toPx() * grow.value))
-                    }
-                }
-            }
-            drawSet(first, Lsl.Flame, -barW * 0.55f)
-            drawSet(second, Lsl.Gold, barW * 0.55f)
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(Modifier.fillMaxWidth()) {
-            val step = when { n <= 6 -> 1; n <= 12 -> 2; else -> 5 }
-            for (i in 1..n) {
-                Text(
-                    if (i == 1 || i % step == 0) "$i" else "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Lsl.Fade,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
     }
 }
 
@@ -484,7 +442,7 @@ private fun TableRow(
 ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(decoratedName(title, LocalSquadLookup.current(title)), style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.labelSmall, color = subtitleColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         values.forEachIndexed { i, v ->
