@@ -1,37 +1,54 @@
 package com.example.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
-import androidx.compose.ui.graphics.Color
+private val ChalkAndMatting = darkColorScheme(
+    primary = Lsl.Mint,
+    onPrimary = Lsl.MintDeep,
+    primaryContainer = Lsl.TurfRaised,
+    onPrimaryContainer = Lsl.Chalk,
+    secondary = Lsl.Sun,
+    onSecondary = Lsl.Pitch,
+    tertiary = Lsl.Sky,
+    onTertiary = Lsl.Pitch,
+    error = Lsl.Tape,
+    onError = Lsl.Pitch,
+    background = Lsl.Pitch,
+    onBackground = Lsl.Chalk,
+    surface = Lsl.Turf,
+    onSurface = Lsl.Chalk,
+    surfaceVariant = Lsl.TurfRaised,
+    onSurfaceVariant = Lsl.Moss,
+    surfaceContainer = Lsl.Turf,
+    surfaceContainerHigh = Lsl.Turf,
+    surfaceContainerHighest = Lsl.TurfRaised,
+    surfaceContainerLow = Lsl.Pitch,
+    outline = Lsl.Line,
+    outlineVariant = Lsl.Line,
+    inverseSurface = Lsl.Chalk,
+    inverseOnSurface = Lsl.Pitch,
+)
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFF96116), // Blazing Flame Orange
-    secondary = Color(0xFF10B981), // Electric Green
-    tertiary = Color(0xFFF59E0B), // Sun Yellow Gold
-    background = Color(0xFF0F172A), // Deep Void Slate
-    surface = Color(0xFF152035), // Gamified Surface Slate
-    onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = Color.White,
-    onSurface = Color.White
+// Hierarchy of corners: small controls are tighter, sheets and the scoreboard softer.
+private val LslShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 @Composable
-fun MyApplicationTheme(
-    darkTheme: Boolean = true, // Force dark theme by default
-    dynamicColor: Boolean = false, // Use our crafted palette for specific branding
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = DarkColorScheme
-
-    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+fun MyApplicationTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = ChalkAndMatting,
+        typography = Typography,
+        shapes = LslShapes,
+        content = content
+    )
 }
