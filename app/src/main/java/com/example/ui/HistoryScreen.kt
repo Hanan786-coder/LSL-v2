@@ -69,7 +69,7 @@ fun HistoryScreen(
                 EmptyState(
                     icon = Icons.Default.History,
                     title = if (completed.isEmpty()) "No finished matches yet" else "Nothing matches \"$query\"",
-                    body = if (completed.isEmpty()) "Finish a match and its full scorecard is saved here." else "Try a team or player name.",
+                    body = if (completed.isEmpty()) "Finished matches appear here." else "Try a team or player name.",
                     modifier = Modifier.padding(top = 32.dp)
                 )
             } else {

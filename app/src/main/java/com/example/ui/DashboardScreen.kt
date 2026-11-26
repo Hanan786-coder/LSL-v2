@@ -145,7 +145,7 @@ fun DashboardScreen(
                     Text("No finished matches yet", style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Results, top scorers and the player of the match show up here after your first game.",
+                        "Finished matches appear here.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Lsl.Mist
                     )
@@ -159,15 +159,8 @@ fun DashboardScreen(
     }
 }
 
-private fun greeting(): String {
-    val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    return when (h) {
-        in 5..11 -> "Morning game? Teams are ready when you are."
-        in 12..16 -> "Afternoon game? Teams are ready when you are."
-        in 17..20 -> "Evening game? Teams are ready when you are."
-        else -> "Late one? Teams are ready when you are."
-    }
-}
+private fun greeting(): String =
+    SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date())
 
 private fun countLabel(n: Int, singular: String, plural: String = singular + "s") =
     if (n == 0) "None yet" else "$n ${if (n == 1) singular else plural}"
@@ -221,8 +214,8 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                if (canStart) "Pick two teams, toss the coin, score every ball."
-                else "Create squads with player names, then score your first game.",
+                if (canStart) "Choose teams and overs, then toss."
+                else "You need two squads to play.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = fg.copy(alpha = 0.8f)
             )
@@ -262,7 +255,7 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
             Spacer(Modifier.width(8.dp))
             Text("Live", style = MaterialTheme.typography.labelLarge, color = Lsl.Tape)
             Spacer(Modifier.weight(1f))
-            Text("Tap to keep scoring", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
+            Text("Tap to resume", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

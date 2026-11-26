@@ -73,7 +73,7 @@ fun TeamsManageScreen(
             EmptyState(
                 icon = Icons.Default.Groups,
                 title = "No teams yet",
-                body = "Add a squad, give each player a role and pick a captain. Saved players can join more than one team.",
+                body = "Add a squad with players, roles and a captain.",
                 actionText = "Add a team",
                 onAction = { creating = true },
                 modifier = Modifier.padding(inner).padding(top = 48.dp)
@@ -116,7 +116,7 @@ fun TeamsManageScreen(
     deleting?.let { t ->
         ConfirmDialog(
             title = "Delete ${t.name}?",
-            body = "The squad is removed. Its players stay saved, and finished matches and career stats stay in history.",
+            body = "Its players, past matches and stats are kept.",
             confirmText = "Delete team",
             onConfirm = { viewModel.deleteTeam(t) },
             onDismiss = { deleting = null }
@@ -181,7 +181,7 @@ private fun TeamCard(
                 }
                 if (squad.any { it.role == PlayerRole.UNSET }) {
                     Text(
-                        "Some players have no role yet. Edit the squad to set them.",
+                        "Some roles aren't set yet.",
                         style = MaterialTheme.typography.labelSmall,
                         color = Lsl.Fade,
                         modifier = Modifier.padding(top = 4.dp)
@@ -296,7 +296,7 @@ private fun TeamEditorSheet(
                 trailing = { if (squad.isNotEmpty() && squad.none { it.captain }) Text("Tap the C to pick a captain", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade) }
             )
             if (squad.isEmpty()) {
-                Text("Add at least 2 players. Each one gets a role in this team.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
+                Text("Add at least 2 players.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             }
             squad.forEachIndexed { i, spot ->
                 key(spot.name) {

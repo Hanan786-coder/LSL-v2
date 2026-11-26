@@ -323,10 +323,10 @@ private fun ScoringScreenContent(
                 ) {
                     Text(
                         when (selectedExtra) {
-                            "WIDE" -> "Wide: +1 extra. Tap the runs they ran (usually 0)."
-                            "NO_BALL" -> "No ball: +1 extra. Tap the runs off the bat."
-                            "BYE" -> "Byes: tap the runs they ran."
-                            else -> "Leg byes: tap the runs they ran."
+                            "WIDE" -> "Wide (+1). Add any runs they ran."
+                            "NO_BALL" -> "No ball (+1). Add runs off the bat."
+                            "BYE" -> "Byes. Tap the runs they ran."
+                            else -> "Leg byes. Tap the runs they ran."
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = Lsl.Violet,
@@ -1161,7 +1161,7 @@ private fun WicketSheet(
                     }
                 }
                 survivor != null -> Text(
-                    "No one left to come in. $survivor bats on alone and keeps the strike.",
+                    "$survivor bats on alone.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Lsl.Flame
                 )
@@ -1209,7 +1209,7 @@ private fun BowlerSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 color = Lsl.Chalk
             )
-            Text("Bowlers and all-rounders first", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
+            Text("Specialists first", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             Spacer(Modifier.height(12.dp))
             val lookup = LocalSquadLookup.current
             val ordered = roster.withIndex().sortedBy { (i, n) ->
@@ -1350,7 +1350,7 @@ private fun EditBallsSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Deck) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text("Correct a ball", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
-            Text("Latest first. Tap a ball to change it.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
+            Text("Latest first.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             Spacer(Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.heightIn(max = 440.dp)) {
                 items(indexed, key = { it.value.id }) { iv ->

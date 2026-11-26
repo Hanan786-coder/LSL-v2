@@ -163,9 +163,9 @@ fun LeaderboardScreen(
                         icon = Icons.Default.Leaderboard,
                         title = if (careers.isEmpty()) "No stats yet" else "No one qualifies yet",
                         body = when {
-                            careers.isEmpty() -> "Finish a match and every batter and bowler gets a career line here."
+                            careers.isEmpty() -> "Stats appear after your first finished match."
                             m == Metric.STRIKE || m == Metric.ECONOMY -> "Needs at least one full over (6 balls)."
-                            m.tab == 2 -> "Pick the fielder when you record a catch, run out or stumping and they show up here."
+                            m.tab == 2 -> "Counted when you pick the fielder on a catch, run out or stumping."
                             else -> "Nobody has one of these yet."
                         },
                         modifier = Modifier.padding(top = 24.dp)

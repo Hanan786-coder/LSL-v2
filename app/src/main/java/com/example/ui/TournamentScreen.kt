@@ -84,7 +84,7 @@ fun TournamentScreen(
                     EmptyState(
                         icon = Icons.Default.EmojiEvents,
                         title = "No leagues yet",
-                        body = "Create a league, add teams to it, and the points table and fixtures build themselves.",
+                        body = "Add teams to a league to get a points table and fixtures.",
                         actionText = "Create a league",
                         onAction = { showCreate = true },
                         modifier = Modifier.padding(inner).padding(top = 48.dp)
@@ -167,7 +167,7 @@ fun TournamentScreen(
     deleting?.let { t ->
         ConfirmDialog(
             title = "Delete ${t.name}?",
-            body = "The league and its table are removed. Teams and finished matches stay.",
+            body = "Teams and finished matches are kept.",
             confirmText = "Delete league",
             onConfirm = { viewModel.deleteTournament(t); if (selectedId == t.id) selectedId = null },
             onDismiss = { deleting = null }
@@ -262,7 +262,7 @@ private fun TournamentDetail(
                     EmptyState(
                         icon = Icons.Default.GroupAdd,
                         title = "No teams in this league",
-                        body = "Add at least two teams to build the table and fixtures.",
+                        body = "Add at least two teams.",
                         actionText = "Add teams",
                         onAction = { addingTeams = true }
                     )
@@ -286,7 +286,7 @@ private fun TournamentDetail(
                 Text("Teams in ${tournament.name}", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
                 Text("Tap to add or remove.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
                 Spacer(Modifier.height(12.dp))
-                if (allTeams.isEmpty()) Text("Create teams first from the home screen.", color = Lsl.Mist)
+                if (allTeams.isEmpty()) Text("No teams yet.", color = Lsl.Mist)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 460.dp)) {
                     items(allTeams, key = { it.id }) { team ->
                         val inThis = team.tournamentId == tournament.id

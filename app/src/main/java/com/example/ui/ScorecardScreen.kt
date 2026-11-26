@@ -217,7 +217,7 @@ private fun SummaryTab(
 
         item {
             QuietButton(
-                text = "Share with the group",
+                text = "Share scorecard",
                 icon = Icons.Default.Share,
                 tint = Lsl.Flame,
                 height = 52.dp,

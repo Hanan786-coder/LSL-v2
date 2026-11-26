@@ -242,7 +242,7 @@ fun RunRaceChart(
             Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
         }
         Text(
-            "Tap or drag across the chart to see the score after any over.",
+            "Drag across the chart to see any over.",
             style = MaterialTheme.typography.labelSmall,
             color = Lsl.Fade,
             modifier = Modifier.padding(top = 6.dp)

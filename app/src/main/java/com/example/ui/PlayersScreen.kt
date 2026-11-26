@@ -52,7 +52,7 @@ fun PlayersScreen(
 
     LslScreen(
         title = "Players",
-        subtitle = if (players.isEmpty()) null else "${players.size} saved, add them to any team",
+        subtitle = if (players.isEmpty()) null else "${players.size} saved",
         onBack = onBack,
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -83,7 +83,7 @@ fun PlayersScreen(
                 EmptyState(
                     icon = Icons.Default.Person,
                     title = if (players.isEmpty()) "No saved players yet" else "No one called \"$query\"",
-                    body = if (players.isEmpty()) "Save your regulars once, then pick them into any team with a role for that team."
+                    body = if (players.isEmpty()) "Save regular players once and add them to any team."
                     else "Add them as a new player.",
                     modifier = Modifier.padding(top = 32.dp)
                 )
@@ -111,13 +111,13 @@ fun PlayersScreen(
                                 if (ms.isEmpty()) {
                                     Text("Not in a team yet", style = MaterialTheme.typography.labelMedium, color = Lsl.Fade)
                                 } else {
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         ms.forEach { m ->
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(m.team, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
-                                                Spacer(Modifier.width(4.dp))
-                                                if (m.captain) { CaptainMark(size = 16.dp); Spacer(Modifier.width(3.dp)) }
-                                                RoleBadge(m.role)
+                                            // Fixed height + centring keeps names, C marks and role tags on one line
+                                            Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(m.team, style = MaterialTheme.typography.labelLarge.merge(CenteredLabel), color = Lsl.Mist, maxLines = 1)
+                                                if (m.captain) { Spacer(Modifier.width(6.dp)); CaptainMark(size = 18.dp) }
+                                                if (m.role != PlayerRole.UNSET) { Spacer(Modifier.width(6.dp)); RoleBadge(m.role) }
                                             }
                                         }
                                     }
@@ -155,7 +155,7 @@ fun PlayersScreen(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth().testTag("new_player_name")
                     )
-                    Text("Set their role when you add them to a team.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
+                    Text("Roles are set per team.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
                 }
             },
             confirmButton = {
@@ -176,13 +176,13 @@ fun PlayersScreen(
                 containerColor = Lsl.Deck,
                 shape = RoundedCornerShape(24.dp),
                 title = { Text("${p.name} is in $teamCount team${if (teamCount == 1) "" else "s"}", style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk) },
-                text = { Text("Remove them from those squads first, then delete.", color = Lsl.Mist) },
+                text = { Text("Remove them from those squads first.", color = Lsl.Mist) },
                 confirmButton = { TextButton(onClick = { deleting = null }) { Text("OK", color = Lsl.Flame) } }
             )
         } else {
             ConfirmDialog(
                 title = "Delete ${p.name}?",
-                body = "They are removed from saved players. Career stats from past matches stay.",
+                body = "Their past stats are kept.",
                 confirmText = "Delete player",
                 onConfirm = {
                     viewModel.deletePlayer(p) { ok ->

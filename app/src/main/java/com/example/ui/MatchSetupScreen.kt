@@ -207,7 +207,7 @@ fun MatchSetupScreen(
                 Spacer(Modifier.height(12.dp))
                 val list = teams.filter { it.id != other?.id }
                 if (list.isEmpty()) {
-                    Text("No other teams yet. Add one from Teams on the home screen.", color = Lsl.Mist)
+                    Text("No other teams yet.", color = Lsl.Mist)
                 }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 460.dp)) {
                     items(list, key = { it.id }) { t ->

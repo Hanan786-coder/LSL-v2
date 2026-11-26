@@ -488,6 +488,14 @@ fun CountUpText(
 // Roles: a short tinted tag per role, and a gold "C" for the captain
 // ---------------------------------------------------------------------------
 
+/** Text style whose glyphs sit optically centred in a fixed-height box (no font padding above or below). */
+val CenteredLabel = androidx.compose.ui.text.TextStyle(
+    lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+        alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+        trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+    )
+)
+
 fun roleColor(role: com.example.data.PlayerRole): Color = when (role) {
     com.example.data.PlayerRole.BATTER -> Lsl.Flame
     com.example.data.PlayerRole.BOWLER -> Lsl.Sky
@@ -502,17 +510,16 @@ fun RoleBadge(role: com.example.data.PlayerRole, modifier: Modifier = Modifier, 
     val c = roleColor(role)
     Box(
         modifier
+            .height(22.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(c.copy(alpha = 0.16f))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+            .padding(horizontal = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             if (long) role.label else role.short,
             color = c,
-            fontFamily = Scoreboard,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp,
+            style = CenteredLabel.copy(fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 14.sp),
             maxLines = 1
         )
     }
