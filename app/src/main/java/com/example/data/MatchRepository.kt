@@ -23,7 +23,55 @@ class MatchRepository(private val locoDao: LocoDao) {
     
     suspend fun insertTeam(team: TeamEntity): Long = locoDao.insertTeam(team)
     
-    suspend fun deleteTeam(team: TeamEntity) = locoDao.deleteTeam(team)
+    suspend fun deleteTeam(team: TeamEntity) {
+        locoDao.deleteMembersOfTeam(team.id)
+        locoDao.deleteTeam(team)
+    }
+
+    // --- Saved players & memberships ---
+    val allPlayers: Flow<List<PlayerEntity>> = locoDao.getAllPlayers()
+    val allMembers: Flow<List<TeamMemberEntity>> = locoDao.getAllMembers()
+
+    /** Returns the saved player with this name, creating them if new (names match ignoring case). */
+    suspend fun ensurePlayer(name: String): PlayerEntity {
+        val clean = name.trim()
+        locoDao.findPlayerByName(clean)?.let { return it }
+        val id = locoDao.insertPlayer(PlayerEntity(name = clean)).toInt()
+        return PlayerEntity(id = id, name = clean)
+    }
+
+    /** Deletes a saved player only when no team uses them. Returns false otherwise. */
+    suspend fun deletePlayer(player: PlayerEntity): Boolean {
+        if (locoDao.membershipCount(player.id) > 0) return false
+        locoDao.deletePlayerById(player.id)
+        return true
+    }
+
+    data class MemberDraft(val name: String, val role: PlayerRole, val captain: Boolean)
+
+    /**
+     * Saves a team and its squad. The squad's order is the batting order. The team's
+     * comma-separated roster is rewritten too, so scoring and stats keep working unchanged.
+     */
+    suspend fun saveTeam(team: TeamEntity, squad: List<MemberDraft>): Int {
+        val unique = squad.filter { it.name.isNotBlank() }.distinctBy { it.name.trim().lowercase() }
+        val players = unique.map { ensurePlayer(it.name) }
+        val teamId = locoDao.insertTeam(
+            team.copy(playerNames = players.joinToString(", ") { it.name })
+        ).toInt()
+        locoDao.deleteMembersOfTeam(teamId)
+        val captainIndex = unique.indexOfFirst { it.captain }
+        locoDao.insertMembers(unique.mapIndexed { i, d ->
+            TeamMemberEntity(
+                teamId = teamId,
+                playerId = players[i].id,
+                role = d.role.name,
+                isCaptain = i == captainIndex,
+                position = i
+            )
+        })
+        return teamId
+    }
 
     // --- Matches ---
     val allMatches: Flow<List<MatchEntity>> = locoDao.getAllMatches()

@@ -69,4 +69,29 @@ interface LocoDao {
 
     @Update
     suspend fun updatePlayerStats(stats: PlayerStatsEntity)
+
+    // --- Saved players & team memberships ---
+    @Query("SELECT * FROM players ORDER BY name COLLATE NOCASE")
+    fun getAllPlayers(): Flow<List<PlayerEntity>>
+
+    @Query("SELECT * FROM players WHERE name = :name COLLATE NOCASE LIMIT 1")
+    suspend fun findPlayerByName(name: String): PlayerEntity?
+
+    @Insert
+    suspend fun insertPlayer(player: PlayerEntity): Long
+
+    @Query("DELETE FROM players WHERE id = :id")
+    suspend fun deletePlayerById(id: Int)
+
+    @Query("SELECT * FROM team_members ORDER BY teamId, position")
+    fun getAllMembers(): Flow<List<TeamMemberEntity>>
+
+    @Query("DELETE FROM team_members WHERE teamId = :teamId")
+    suspend fun deleteMembersOfTeam(teamId: Int)
+
+    @Insert
+    suspend fun insertMembers(members: List<TeamMemberEntity>)
+
+    @Query("SELECT COUNT(*) FROM team_members WHERE playerId = :playerId")
+    suspend fun membershipCount(playerId: Int): Int
 }

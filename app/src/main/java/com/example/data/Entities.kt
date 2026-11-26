@@ -80,3 +80,35 @@ data class PlayerStatsEntity(
     val fours: Int = 0,
     val sixes: Int = 0
 )
+
+/** A saved player. One person can be a member of many teams. */
+@Entity(tableName = "players")
+data class PlayerEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val createdTime: Long = System.currentTimeMillis()
+)
+
+/** A player's place in one team: their role there, captaincy and batting position. */
+@Entity(tableName = "team_members")
+data class TeamMemberEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val teamId: Int,
+    val playerId: Int,
+    val role: String = PlayerRole.UNSET.name,
+    val isCaptain: Boolean = false,
+    val position: Int = 0
+)
+
+enum class PlayerRole(val label: String, val short: String) {
+    BATTER("Batter", "Bat"),
+    BOWLER("Bowler", "Bowl"),
+    ALL_ROUNDER("All-rounder", "AR"),
+    KEEPER("Keeper", "WK"),
+    UNSET("No role", "");
+
+    companion object {
+        fun of(value: String?): PlayerRole = entries.firstOrNull { it.name == value } ?: UNSET
+        val choices = listOf(BATTER, BOWLER, ALL_ROUNDER, KEEPER)
+    }
+}
