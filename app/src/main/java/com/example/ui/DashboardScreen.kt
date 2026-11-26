@@ -270,13 +270,11 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
                 Text("v $bowling", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    "${card.totalRuns}/${card.totalWickets}",
-                    fontFamily = Scoreboard,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 32.sp,
-                    color = Lsl.Chalk
-                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    RollingNumber(card.totalRuns, 32.sp, Lsl.Chalk)
+                    Text("/", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Lsl.Fade, modifier = Modifier.padding(horizontal = 1.dp, vertical = 3.dp))
+                    RollingNumber(card.totalWickets, 24.sp, if (card.totalWickets > 0) Lsl.Tape else Lsl.Mist, Modifier.padding(bottom = 2.dp))
+                }
                 Text("${card.totalOversString} of ${match.overs} ov", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
             }
         }

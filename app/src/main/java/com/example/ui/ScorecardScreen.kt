@@ -266,12 +266,11 @@ private fun InningsLine(name: String, card: InningsScorecard, won: Boolean) {
             Text(name, style = MaterialTheme.typography.titleMedium, color = if (won) Lsl.Chalk else Lsl.Mist, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("RR ${card.runRate.fmt()}  Extras ${card.totalExtrasSum}", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade)
         }
-        Text(
-            "${card.totalRuns}/${card.totalWickets}",
-            fontFamily = Scoreboard,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 30.sp,
-            color = if (won) Lsl.Chalk else Lsl.Mist
+        CountUpText(
+            value = card.totalRuns,
+            style = androidx.compose.ui.text.TextStyle(fontFamily = Scoreboard, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp),
+            color = if (won) Lsl.Chalk else Lsl.Mist,
+            format = { "$it/${card.totalWickets}" }
         )
         Text(" (${card.totalOversString})", style = MaterialTheme.typography.labelMedium, color = Lsl.Fade)
     }
@@ -291,7 +290,8 @@ private fun PerformerRow(name: String, figure: String, detail: String, icon: and
 /** Runs-per-over bars for both innings, growing in once when shown. */
 @Composable
 fun ManhattanChart(first: List<OverSummary>, second: List<OverSummary>, totalOvers: Int) {
-    val grow = remember { Animatable(0f) }
+    val reduce = rememberReduceMotion()
+    val grow = remember { Animatable(if (reduce) 1f else 0f) }
     LaunchedEffect(Unit) { grow.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
     val n = maxOf(totalOvers, first.size, second.size).coerceAtLeast(1)
     val maxRuns = (first + second).maxOfOrNull { it.runs }?.coerceAtLeast(6) ?: 6

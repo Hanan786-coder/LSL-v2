@@ -453,3 +453,33 @@ fun Stat(value: String, label: String, modifier: Modifier = Modifier, valueColor
 }
 
 fun Double.fmt(digits: Int = 2): String = String.format(java.util.Locale.US, "%.${digits}f", this)
+
+/** True when the user turned animations off in system settings. */
+@Composable
+fun rememberReduceMotion(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return remember {
+        android.provider.Settings.Global.getFloat(
+            context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        ) == 0f
+    }
+}
+
+/** Counts up from zero the first time it is shown (instantly when motion is reduced). */
+@Composable
+fun CountUpText(
+    value: Int,
+    style: androidx.compose.ui.text.TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+    durationMs: Int = 900,
+    format: (Int) -> String = { "$it" }
+) {
+    val reduce = rememberReduceMotion()
+    val anim = remember { Animatable(if (reduce) value.toFloat() else 0f) }
+    LaunchedEffect(value) {
+        if (reduce) anim.snapTo(value.toFloat())
+        else anim.animateTo(value.toFloat(), tween(durationMs, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)))
+    }
+    Text(format(anim.value.toInt()), style = style, color = color, modifier = modifier, maxLines = 1)
+}
