@@ -57,7 +57,7 @@ fun HistoryScreen(
                     placeholder = { Text("Search teams, results or players") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     trailingIcon = {
-                        if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear search", tint = Lsl.Moss) }
+                        if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear search", tint = Lsl.Mist) }
                     },
                     singleLine = true,
                     colors = lslFieldColors(),

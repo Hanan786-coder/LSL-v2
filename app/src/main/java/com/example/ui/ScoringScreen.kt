@@ -94,8 +94,8 @@ fun ScoringScreen(
 
     val activeMatch = match
     if (activeMatch == null) {
-        Box(Modifier.fillMaxSize().background(Lsl.Pitch), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Lsl.Mint)
+        Box(Modifier.fillMaxSize().background(Lsl.Night), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Lsl.Flame)
         }
         return
     }
@@ -155,7 +155,7 @@ fun ScoringScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Lsl.Pitch)
+            .background(Lsl.Night)
     ) {
         BoxWithConstraints(
             Modifier
@@ -191,11 +191,11 @@ fun ScoringScreen(
                         Text(
                             "${if (activeMatch.currentInnings == 1) "1st" else "2nd"} innings, ${activeMatch.overs} overs",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Lsl.Moss
+                            color = Lsl.Mist
                         )
                     }
                     IconButton(onClick = onViewScorecardClick, modifier = Modifier.testTag("open_scorecard")) {
-                        Icon(Icons.Default.Leaderboard, "Full scorecard", tint = Lsl.Mint)
+                        Icon(Icons.Default.Leaderboard, "Full scorecard", tint = Lsl.Flame)
                     }
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
@@ -204,17 +204,17 @@ fun ScoringScreen(
                         DropdownMenu(
                             expanded = menuOpen,
                             onDismissRequest = { menuOpen = false },
-                            containerColor = Lsl.TurfRaised
+                            containerColor = Lsl.DeckRaised
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Correct a ball", color = Lsl.Chalk) },
-                                leadingIcon = { Icon(Icons.Default.Edit, null, tint = Lsl.Moss) },
+                                leadingIcon = { Icon(Icons.Default.Edit, null, tint = Lsl.Mist) },
                                 enabled = ballsList.any { it.innings == activeMatch.currentInnings },
                                 onClick = { menuOpen = false; viewModel.showEditScoreDialog.value = true }
                             )
                             DropdownMenuItem(
                                 text = { Text("Change bowler", color = Lsl.Chalk) },
-                                leadingIcon = { Icon(Icons.Default.SportsBaseball, null, tint = Lsl.Moss) },
+                                leadingIcon = { Icon(Icons.Default.SportsBaseball, null, tint = Lsl.Mist) },
                                 onClick = { menuOpen = false; viewModel.showBowlerSelectDialog.value = true }
                             )
                             DropdownMenuItem(
@@ -262,7 +262,7 @@ fun ScoringScreen(
                         Modifier
                             .size(44.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Lsl.TurfRaised)
+                            .background(Lsl.DeckRaised)
                             .pressable(enabled = ballsList.isNotEmpty()) { viewModel.undoLastBall() }
                             .testTag("undo_button"),
                         contentAlignment = Alignment.Center
@@ -289,7 +289,7 @@ fun ScoringScreen(
                             else -> "Leg byes: tap the runs they ran."
                         },
                         style = MaterialTheme.typography.labelMedium,
-                        color = Lsl.Lilac,
+                        color = Lsl.Violet,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -323,12 +323,12 @@ fun ScoringScreen(
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.CheckCircle, null, tint = Lsl.MintDeep, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.CheckCircle, null, tint = Lsl.FlameInk, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "End of over ${t.overNumber}: ${t.runs} run${if (t.runs == 1) "" else "s"}",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Lsl.Pitch
+                        color = Lsl.Night
                     )
                 }
             }
@@ -411,9 +411,9 @@ fun ScoringScreen(
     inningsBreak?.let { ib ->
         AlertDialog(
             onDismissRequest = { inningsBreak = null },
-            containerColor = Lsl.Turf,
+            containerColor = Lsl.Deck,
             shape = RoundedCornerShape(28.dp),
-            icon = { Icon(Icons.Default.SportsCricket, null, tint = Lsl.Mint, modifier = Modifier.size(32.dp)) },
+            icon = { Icon(Icons.Default.SportsCricket, null, tint = Lsl.Flame, modifier = Modifier.size(32.dp)) },
             title = { Text("Innings break", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -422,7 +422,7 @@ fun ScoringScreen(
                         fontFamily = Scoreboard,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 64.sp,
-                        color = Lsl.Mint
+                        color = Lsl.Flame
                     )
                     Text(
                         "${ib.chasingTeam} need ${ib.target} to win off ${activeMatch.overs * 6} balls",
@@ -473,7 +473,7 @@ private fun Scoreboard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            Text("CRR ${info.runRate.fmt()}", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+            Text("CRR ${info.runRate.fmt()}", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
         }
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
@@ -494,7 +494,7 @@ private fun Scoreboard(
             RollingNumber(
                 value = info.totalWickets,
                 fontSize = if (compact) 40.sp else 50.sp,
-                color = if (info.totalWickets > 0) Lsl.Tape else Lsl.Moss,
+                color = if (info.totalWickets > 0) Lsl.Tape else Lsl.Mist,
                 modifier = Modifier.padding(bottom = if (compact) 2.dp else 3.dp)
             )
             Spacer(Modifier.weight(1f))
@@ -506,7 +506,7 @@ private fun Scoreboard(
                     fontSize = if (compact) 24.sp else 28.sp,
                     color = Lsl.Chalk
                 )
-                Text("of ${match.overs} overs", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                Text("of ${match.overs} overs", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
             }
         }
 
@@ -516,14 +516,14 @@ private fun Scoreboard(
                 .fillMaxWidth()
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Lsl.TurfRaised)
+                .background(Lsl.DeckRaised)
         ) {
             Box(
                 Modifier
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Lsl.Mint)
+                    .background(Lsl.Flame)
             )
         }
 
@@ -538,10 +538,10 @@ private fun Scoreboard(
                 Text(
                     "Need $need off $ballsLeft",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Lsl.Sun,
+                    color = Lsl.Gold,
                     modifier = Modifier.weight(1f)
                 )
-                Text("Target ${match.targetRuns}  RRR ${rrr.fmt()}", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+                Text("Target ${match.targetRuns}  RRR ${rrr.fmt()}", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
             }
         } else {
             val projected = if (info.legalBallsBowled > 0) (info.runRate * match.overs).toInt() else 0
@@ -549,13 +549,13 @@ private fun Scoreboard(
                 Text(
                     if (info.legalBallsBowled > 0) "Projected $projected" else "First ball coming up",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Lsl.Moss,
+                    color = Lsl.Mist,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
                     "Extras ${info.totalExtrasSum}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Lsl.Moss
+                    color = Lsl.Mist
                 )
             }
         }
@@ -609,7 +609,7 @@ private fun OverTrack(info: InningsScorecard, compact: Boolean) {
         Text(
             if (showingLast) "Last over" else "This over",
             style = MaterialTheme.typography.labelSmall,
-            color = Lsl.Moss,
+            color = Lsl.Mist,
             modifier = Modifier.width(58.dp)
         )
         LazyRow(
@@ -655,7 +655,7 @@ private fun OverTrack(info: InningsScorecard, compact: Boolean) {
                 fontFamily = Scoreboard,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = Lsl.Moss
+                color = Lsl.Mist
             )
         } else {
             Text(
@@ -700,7 +700,7 @@ private fun CreasePanel(
                     .padding(end = 4.dp)
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(Lsl.TurfRaised)
+                    .background(Lsl.DeckRaised)
                     .pressable { turns++; onSwap() }
                     .testTag("swap_strike"),
                 contentAlignment = Alignment.Center
@@ -708,7 +708,7 @@ private fun CreasePanel(
                 Icon(
                     Icons.Default.SwapVert,
                     contentDescription = "Swap strike",
-                    tint = Lsl.Mint,
+                    tint = Lsl.Flame,
                     modifier = Modifier.graphicsLayer { rotationZ = rot }
                 )
             }
@@ -723,7 +723,7 @@ private fun CreasePanel(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.SportsBaseball, null, tint = Lsl.Moss, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.SportsBaseball, null, tint = Lsl.Mist, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(8.dp))
             Text(
                 match.currentBowler.ifEmpty { "Pick a bowler" },
@@ -741,7 +741,7 @@ private fun CreasePanel(
                 color = Lsl.Chalk
             )
             Spacer(Modifier.width(8.dp))
-            Text("Econ ${(bowler?.economy ?: 0.0).fmt(1)}", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+            Text("Econ ${(bowler?.economy ?: 0.0).fmt(1)}", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
         }
         if (!compact) {
             Text(
@@ -756,8 +756,8 @@ private fun CreasePanel(
 
 @Composable
 private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, compact: Boolean, onClick: () -> Unit) {
-    val dot by animateColorAsState(if (striker) Lsl.Mint else Color.Transparent, tween(220), label = "strike-dot")
-    val nameColor by animateColorAsState(if (striker) Lsl.Chalk else Lsl.Moss, tween(220), label = "strike-name")
+    val dot by animateColorAsState(if (striker) Lsl.Flame else Color.Transparent, tween(220), label = "strike-dot")
+    val nameColor by animateColorAsState(if (striker) Lsl.Chalk else Lsl.Mist, tween(220), label = "strike-name")
     Row(
         Modifier
             .fillMaxWidth()
@@ -770,7 +770,7 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
         Box(
             Modifier
                 .size(16.dp)
-                .border(1.5.dp, if (striker) Lsl.Mint else Lsl.Line, CircleShape)
+                .border(1.5.dp, if (striker) Lsl.Flame else Lsl.Line, CircleShape)
                 .padding(3.dp)
                 .clip(CircleShape)
                 .background(dot)
@@ -789,12 +789,12 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
             fontFamily = Scoreboard,
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
-            color = if (striker) Lsl.Chalk else Lsl.Moss
+            color = if (striker) Lsl.Chalk else Lsl.Mist
         )
         Text(
             " (${stats?.ballsFaced ?: 0})",
             style = MaterialTheme.typography.labelMedium,
-            color = Lsl.Moss,
+            color = Lsl.Mist,
             modifier = Modifier.widthIn(min = 34.dp)
         )
         if (!compact) {
@@ -815,8 +815,8 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
 
 @Composable
 private fun ExtraToggle(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val bg by animateColorAsState(if (selected) Lsl.Lilac else Lsl.TurfRaised, tween(150), label = "x-bg")
-    val fg by animateColorAsState(if (selected) Lsl.Pitch else Lsl.Chalk, tween(150), label = "x-fg")
+    val bg by animateColorAsState(if (selected) Lsl.Violet else Lsl.DeckRaised, tween(150), label = "x-bg")
+    val fg by animateColorAsState(if (selected) Lsl.Night else Lsl.Chalk, tween(150), label = "x-fg")
     Box(
         modifier
             .height(44.dp)
@@ -843,7 +843,7 @@ private fun Keypad(
                 RunKey(
                     label = if (r == 0) "0" else "$r",
                     caption = when (r) { 0 -> "dot"; 1 -> "single"; 2 -> "double"; else -> "three" },
-                    bg = Lsl.TurfRaised,
+                    bg = Lsl.DeckRaised,
                     fg = Lsl.Chalk,
                     armed = armedExtra != null,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -852,10 +852,10 @@ private fun Keypad(
             }
         }
         Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RunKey("4", "four", Lsl.Sun, Lsl.Pitch, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(4) }
-            RunKey("6", "six", Lsl.Sky, Lsl.Pitch, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(6) }
-            RunKey("5", "five", Lsl.TurfRaised, Lsl.Chalk, armedExtra != null, Modifier.weight(0.7f).fillMaxHeight()) { onRuns(5) }
-            RunKey("Out", "wicket", Lsl.Tape, Lsl.Pitch, false, Modifier.weight(1.3f).fillMaxHeight(), onClick = onWicket)
+            RunKey("4", "four", Lsl.Gold, Lsl.Night, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(4) }
+            RunKey("6", "six", Lsl.Sky, Lsl.Night, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(6) }
+            RunKey("5", "five", Lsl.DeckRaised, Lsl.Chalk, armedExtra != null, Modifier.weight(0.7f).fillMaxHeight()) { onRuns(5) }
+            RunKey("Out", "wicket", Lsl.Tape, Lsl.Night, false, Modifier.weight(1.3f).fillMaxHeight(), onClick = onWicket)
         }
     }
 }
@@ -871,7 +871,7 @@ private fun RunKey(
     onClick: () -> Unit
 ) {
     // Armed extras tint the run keys lilac so it's obvious the next tap is an extra
-    val ring by animateColorAsState(if (armed) Lsl.Lilac else Color.Transparent, tween(150), label = "key-ring")
+    val ring by animateColorAsState(if (armed) Lsl.Violet else Color.Transparent, tween(150), label = "key-ring")
     BoxWithConstraints(
         modifier
             .heightIn(min = 56.dp, max = 120.dp)
@@ -907,7 +907,7 @@ private fun RunKey(
 private fun CelebrationBurst(event: ScoreEvent?, key: Int, modifier: Modifier) {
     if (event == null) return
     val (text, color) = when (event) {
-        is ScoreEvent.Four -> "Four!" to Lsl.Sun
+        is ScoreEvent.Four -> "Four!" to Lsl.Gold
         is ScoreEvent.Six -> "Six!" to Lsl.Sky
         is ScoreEvent.Wicket -> "Out!" to Lsl.Tape
         else -> return
@@ -974,7 +974,7 @@ private fun WicketSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Lsl.Turf,
+        containerColor = Lsl.Deck,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Column(
@@ -990,7 +990,7 @@ private fun WicketSheet(
                 Text(
                     "Recorded on a ${ExtraTypes.first { it.first == armedExtra }.second.lowercase()}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Lsl.Lilac
+                    color = Lsl.Violet
                 )
             }
 
@@ -1030,7 +1030,7 @@ private fun WicketSheet(
                 Text(
                     "No batters left. This wicket ends the innings.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Lsl.Sun
+                    color = Lsl.Gold
                 )
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1044,7 +1044,7 @@ private fun WicketSheet(
                 text = "Record wicket",
                 icon = Icons.Default.Check,
                 color = Lsl.Tape,
-                contentColor = Lsl.Pitch,
+                contentColor = Lsl.Night,
                 modifier = Modifier.fillMaxWidth().testTag("confirm_wicket"),
                 onClick = { onConfirm(dismissed, type, if (type == "RUN_OUT") runs else 0, incoming) }
             )
@@ -1062,7 +1062,7 @@ private fun BowlerSheet(
     onDismiss: () -> Unit,
     onPick: (String) -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Turf) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Deck) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(
                 if (overJustEnded) "Who bowls the next over?" else "Change bowler",
@@ -1078,7 +1078,7 @@ private fun BowlerSheet(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (name == current && !blocked) Lsl.Mint.copy(alpha = 0.14f) else Lsl.TurfRaised)
+                            .background(if (name == current && !blocked) Lsl.Flame.copy(alpha = 0.14f) else Lsl.DeckRaised)
                             .pressable(enabled = !blocked) { onPick(name) }
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1090,7 +1090,7 @@ private fun BowlerSheet(
                             Text(
                                 if (blocked) "Bowled the last over" else if (s == null) "Yet to bowl" else "Econ ${s.economy.fmt(1)}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Lsl.Moss
+                                color = Lsl.Mist
                             )
                         }
                         if (s != null) {
@@ -1121,7 +1121,7 @@ private fun BatterSheet(
 ) {
     val current = if (atStrikerEnd) match.currentStriker else match.currentNonStriker
     val options = roster.filter { it != current && info.batsmen[it]?.isOut != true }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Turf) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Deck) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(
                 if (atStrikerEnd) "On strike" else "At the non-striker's end",
@@ -1131,11 +1131,11 @@ private fun BatterSheet(
             Text(
                 "Replaces $current. Picking the batter at the other end swaps them.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Lsl.Moss
+                color = Lsl.Mist
             )
             Spacer(Modifier.height(12.dp))
             if (options.isEmpty()) {
-                Text("Everyone else in the squad is out.", color = Lsl.Moss)
+                Text("Everyone else in the squad is out.", color = Lsl.Mist)
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 420.dp)) {
                 items(options) { name ->
@@ -1145,7 +1145,7 @@ private fun BatterSheet(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Lsl.TurfRaised)
+                            .background(Lsl.DeckRaised)
                             .pressable { onPick(name) }
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1161,7 +1161,7 @@ private fun BatterSheet(
                                     else -> "Yet to bat"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Lsl.Moss
+                                color = Lsl.Mist
                             )
                         }
                     }
@@ -1183,10 +1183,10 @@ private fun EditBallsSheet(
     val indexed = balls.withIndex().filter { it.value.innings == innings }.reversed()
     var editing by remember { mutableStateOf<IndexedValue<BallInfo>?>(null) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Turf) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Lsl.Deck) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text("Correct a ball", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
-            Text("Latest first. Tap a ball to change it.", style = MaterialTheme.typography.bodySmall, color = Lsl.Moss)
+            Text("Latest first. Tap a ball to change it.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             Spacer(Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.heightIn(max = 440.dp)) {
                 items(indexed, key = { it.value.id }) { iv ->
@@ -1195,7 +1195,7 @@ private fun EditBallsSheet(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Lsl.TurfRaised)
+                            .background(Lsl.DeckRaised)
                             .pressable(pressedScale = 0.98f) { editing = iv }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1205,7 +1205,7 @@ private fun EditBallsSheet(
                             fontFamily = Scoreboard,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
-                            color = Lsl.Moss,
+                            color = Lsl.Mist,
                             modifier = Modifier.width(44.dp)
                         )
                         Column(Modifier.weight(1f)) {
@@ -1232,12 +1232,12 @@ private fun EditBallsSheet(
 
         AlertDialog(
             onDismissRequest = { editing = null },
-            containerColor = Lsl.Turf,
+            containerColor = Lsl.Deck,
             shape = RoundedCornerShape(24.dp),
             title = { Text("Ball ${b.overIndex}.${b.ballNumber}", style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("${b.bowler} to ${b.striker}", style = MaterialTheme.typography.bodySmall, color = Lsl.Moss)
+                    Text("${b.bowler} to ${b.striker}", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
                     SectionTitle("Runs")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(0, 1, 2, 3, 4, 5, 6).forEach { r ->
@@ -1247,13 +1247,13 @@ private fun EditBallsSheet(
                     SectionTitle("Extra")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         ChoiceChip("None", extra == null, { extra = null })
-                        ExtraTypes.forEach { (k, l) -> ChoiceChip(l, extra == k, { extra = k }, accent = Lsl.Lilac) }
+                        ExtraTypes.forEach { (k, l) -> ChoiceChip(l, extra == k, { extra = k }, accent = Lsl.Violet) }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Switch(
                             checked = isWicket,
                             onCheckedChange = { isWicket = it },
-                            colors = SwitchDefaults.colors(checkedTrackColor = Lsl.Tape, checkedThumbColor = Lsl.Pitch)
+                            colors = SwitchDefaults.colors(checkedTrackColor = Lsl.Tape, checkedThumbColor = Lsl.Night)
                         )
                         Spacer(Modifier.width(10.dp))
                         Text("Wicket on this ball", color = Lsl.Chalk)
@@ -1278,9 +1278,9 @@ private fun EditBallsSheet(
                     )
                     onSave(iv.index, edited)
                     editing = null
-                }) { Text("Save ball", color = Lsl.Mint, fontWeight = FontWeight.Bold) }
+                }) { Text("Save ball", color = Lsl.Flame, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel", color = Lsl.Moss) } }
+            dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel", color = Lsl.Mist) } }
         )
     }
 }

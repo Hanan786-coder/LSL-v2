@@ -43,7 +43,7 @@ fun SplashScreen(onSplashDone: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Lsl.Pitch),
+            .background(Lsl.Night),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -84,14 +84,14 @@ fun SplashScreen(onSplashDone: () -> Unit) {
                         .fillMaxHeight()
                         .fillMaxWidth(rule.value)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Lsl.Mint)
+                        .background(Lsl.Flame)
                 )
             }
             Spacer(Modifier.height(12.dp))
             Text(
                 "Street cricket, scored ball by ball",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Lsl.Moss,
+                color = Lsl.Mist,
                 modifier = Modifier.graphicsLayer { alpha = rule.value }
             )
         }

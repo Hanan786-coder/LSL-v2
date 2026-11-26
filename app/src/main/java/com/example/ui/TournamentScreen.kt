@@ -71,8 +71,8 @@ fun TournamentScreen(
                     if (tournaments.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             onClick = { showCreate = true },
-                            containerColor = Lsl.Mint,
-                            contentColor = Lsl.MintDeep,
+                            containerColor = Lsl.Flame,
+                            contentColor = Lsl.FlameInk,
                             icon = { Icon(Icons.Default.Add, null) },
                             text = { Text("New league") },
                             modifier = Modifier.testTag("add_tournament_fab")
@@ -103,22 +103,22 @@ fun TournamentScreen(
                                     .animateItem()
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(18.dp))
-                                    .background(Lsl.Turf)
+                                    .background(Lsl.Deck)
                                     .pressable(pressedScale = 0.98f, onLongClick = { deleting = tour }) { selectedId = tour.id }
                                     .padding(14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
-                                    Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Lsl.Sun.copy(alpha = 0.16f)),
+                                    Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Lsl.Gold.copy(alpha = 0.16f)),
                                     contentAlignment = Alignment.Center
-                                ) { Icon(Icons.Default.EmojiEvents, null, tint = Lsl.Sun) }
+                                ) { Icon(Icons.Default.EmojiEvents, null, tint = Lsl.Gold) }
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(tour.name, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(
                                         "$tTeams team${if (tTeams == 1) "" else "s"}, $tPlayed played",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Lsl.Moss
+                                        color = Lsl.Mist
                                     )
                                 }
                                 IconButton(onClick = { deleting = tour }) {
@@ -137,7 +137,7 @@ fun TournamentScreen(
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCreate = false },
-            containerColor = Lsl.Turf,
+            containerColor = Lsl.Deck,
             shape = RoundedCornerShape(24.dp),
             title = { Text("New league", style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk) },
             text = {
@@ -157,10 +157,10 @@ fun TournamentScreen(
                 TextButton(onClick = {
                     if (name.isNotBlank()) { viewModel.createTournament(name); showCreate = false }
                 }, enabled = name.isNotBlank()) {
-                    Text("Create league", color = if (name.isNotBlank()) Lsl.Mint else Lsl.Fade, fontWeight = FontWeight.Bold)
+                    Text("Create league", color = if (name.isNotBlank()) Lsl.Flame else Lsl.Fade, fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel", color = Lsl.Moss) } }
+            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel", color = Lsl.Mist) } }
         )
     }
 
@@ -249,7 +249,7 @@ private fun TournamentDetail(
         subtitle = "${tTeams.size} teams, ${tMatches.count { it.status == "COMPLETED" }} of ${fixtures.size} fixtures played",
         onBack = onBack,
         actions = {
-            IconButton(onClick = { addingTeams = true }) { Icon(Icons.Default.GroupAdd, "Add teams", tint = Lsl.Mint) }
+            IconButton(onClick = { addingTeams = true }) { Icon(Icons.Default.GroupAdd, "Add teams", tint = Lsl.Flame) }
         }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
@@ -281,12 +281,12 @@ private fun TournamentDetail(
     }
 
     if (addingTeams) {
-        ModalBottomSheet(onDismissRequest = { addingTeams = false }, containerColor = Lsl.Turf) {
+        ModalBottomSheet(onDismissRequest = { addingTeams = false }, containerColor = Lsl.Deck) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
                 Text("Teams in ${tournament.name}", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
-                Text("Tap to add or remove.", style = MaterialTheme.typography.bodySmall, color = Lsl.Moss)
+                Text("Tap to add or remove.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
                 Spacer(Modifier.height(12.dp))
-                if (allTeams.isEmpty()) Text("Create teams first from the home screen.", color = Lsl.Moss)
+                if (allTeams.isEmpty()) Text("Create teams first from the home screen.", color = Lsl.Mist)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 460.dp)) {
                     items(allTeams, key = { it.id }) { team ->
                         val inThis = team.tournamentId == tournament.id
@@ -294,7 +294,7 @@ private fun TournamentDetail(
                             Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(if (inThis) Lsl.Mint.copy(alpha = 0.14f) else Lsl.TurfRaised)
+                                .background(if (inThis) Lsl.Flame.copy(alpha = 0.14f) else Lsl.DeckRaised)
                                 .pressable {
                                     viewModel.updateTeam(team, team.name, team.playerNames.toPlayerList(), if (inThis) null else tournament.id)
                                 }
@@ -307,7 +307,7 @@ private fun TournamentDetail(
                             Icon(
                                 if (inThis) Icons.Default.CheckCircle else Icons.Default.AddCircleOutline,
                                 contentDescription = if (inThis) "In league" else "Not in league",
-                                tint = if (inThis) Lsl.Mint else Lsl.Fade
+                                tint = if (inThis) Lsl.Flame else Lsl.Fade
                             )
                         }
                     }
@@ -326,9 +326,9 @@ private fun PointsTable(table: List<PointsTableRow>) {
     ) {
         item {
             Row(Modifier.padding(horizontal = 12.dp)) {
-                Text("Team", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, modifier = Modifier.weight(1f))
+                Text("Team", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, modifier = Modifier.weight(1f))
                 listOf("P" to 26.dp, "W" to 26.dp, "L" to 26.dp, "Pts" to 34.dp, "NRR" to 54.dp).forEach { (h, w) ->
-                    Text(h, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(w))
+                    Text(h, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(w))
                 }
             }
         }
@@ -338,7 +338,7 @@ private fun PointsTable(table: List<PointsTableRow>) {
                     .animateItem()
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
-                    .background(if (rank == 0 && r.played > 0) Lsl.Sun.copy(alpha = 0.10f) else Lsl.Turf)
+                    .background(if (rank == 0 && r.played > 0) Lsl.Gold.copy(alpha = 0.10f) else Lsl.Deck)
                     .padding(12.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -347,13 +347,13 @@ private fun PointsTable(table: List<PointsTableRow>) {
                         fontFamily = Scoreboard,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = if (rank == 0 && r.played > 0) Lsl.Sun else Lsl.Fade,
+                        color = if (rank == 0 && r.played > 0) Lsl.Gold else Lsl.Fade,
                         modifier = Modifier.width(22.dp)
                     )
                     Text(r.name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    Text("${r.played}", color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
-                    Text("${r.won}", color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
-                    Text("${r.lost}", color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
+                    Text("${r.played}", color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
+                    Text("${r.won}", color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
+                    Text("${r.lost}", color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(26.dp))
                     Text(
                         "${r.points}",
                         fontFamily = Scoreboard,
@@ -366,7 +366,7 @@ private fun PointsTable(table: List<PointsTableRow>) {
                     Text(
                         (if (r.netRunRate >= 0) "+" else "") + r.netRunRate.fmt(2),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (r.netRunRate >= 0) Lsl.Mint else Lsl.Tape,
+                        color = if (r.netRunRate >= 0) Lsl.Flame else Lsl.Tape,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(54.dp)
                     )
@@ -376,11 +376,11 @@ private fun PointsTable(table: List<PointsTableRow>) {
                         r.form.forEach { c ->
                             Box(
                                 Modifier.size(18.dp).clip(CircleShape).background(
-                                    when (c) { 'W' -> Lsl.Mint; 'L' -> Lsl.Tape; else -> Lsl.Fade }
+                                    when (c) { 'W' -> Lsl.Flame; 'L' -> Lsl.Tape; else -> Lsl.Fade }
                                 ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("$c", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Lsl.Pitch)
+                                Text("$c", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Lsl.Night)
                             }
                         }
                     }
@@ -411,7 +411,7 @@ private fun Fixtures(
         modifier = Modifier.fillMaxSize().navigationBarsPadding()
     ) {
         if (fixtures.isEmpty()) {
-            item { Text("Add one more team to create fixtures.", color = Lsl.Moss, modifier = Modifier.padding(16.dp)) }
+            item { Text("Add one more team to create fixtures.", color = Lsl.Mist, modifier = Modifier.padding(16.dp)) }
         }
         items(fixtures, key = { "${it.first.id}-${it.second.id}" }) { (a, b) ->
             fun pair(m: MatchEntity) = (m.teamAId == a.id && m.teamBId == b.id) || (m.teamAId == b.id && m.teamBId == a.id)
@@ -422,7 +422,7 @@ private fun Fixtures(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Lsl.Turf)
+                    .background(Lsl.Deck)
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -438,7 +438,7 @@ private fun Fixtures(
                     }
                     if (done != null) {
                         Spacer(Modifier.height(6.dp))
-                        Text(done.resultText, style = MaterialTheme.typography.labelMedium, color = Lsl.Sun)
+                        Text(done.resultText, style = MaterialTheme.typography.labelMedium, color = Lsl.Gold)
                     }
                 }
                 Spacer(Modifier.width(8.dp))

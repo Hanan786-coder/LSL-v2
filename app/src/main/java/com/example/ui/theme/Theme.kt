@@ -7,31 +7,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 
-private val ChalkAndMatting = darkColorScheme(
-    primary = Lsl.Mint,
-    onPrimary = Lsl.MintDeep,
-    primaryContainer = Lsl.TurfRaised,
+private val CrestNight = darkColorScheme(
+    primary = Lsl.Flame,
+    onPrimary = Lsl.FlameInk,
+    primaryContainer = Lsl.DeckRaised,
     onPrimaryContainer = Lsl.Chalk,
-    secondary = Lsl.Sun,
-    onSecondary = Lsl.Pitch,
+    secondary = Lsl.Gold,
+    onSecondary = Lsl.Night,
     tertiary = Lsl.Sky,
-    onTertiary = Lsl.Pitch,
+    onTertiary = Lsl.Night,
     error = Lsl.Tape,
-    onError = Lsl.Pitch,
-    background = Lsl.Pitch,
+    onError = Lsl.Night,
+    background = Lsl.Night,
     onBackground = Lsl.Chalk,
-    surface = Lsl.Turf,
+    surface = Lsl.Deck,
     onSurface = Lsl.Chalk,
-    surfaceVariant = Lsl.TurfRaised,
-    onSurfaceVariant = Lsl.Moss,
-    surfaceContainer = Lsl.Turf,
-    surfaceContainerHigh = Lsl.Turf,
-    surfaceContainerHighest = Lsl.TurfRaised,
-    surfaceContainerLow = Lsl.Pitch,
+    surfaceVariant = Lsl.DeckRaised,
+    onSurfaceVariant = Lsl.Mist,
+    surfaceContainer = Lsl.Deck,
+    surfaceContainerHigh = Lsl.Deck,
+    surfaceContainerHighest = Lsl.DeckRaised,
+    surfaceContainerLow = Lsl.Night,
     outline = Lsl.Line,
     outlineVariant = Lsl.Line,
     inverseSurface = Lsl.Chalk,
-    inverseOnSurface = Lsl.Pitch,
+    inverseOnSurface = Lsl.Night,
 )
 
 // Hierarchy of corners: small controls are tighter, sheets and the scoreboard softer.
@@ -46,7 +46,7 @@ private val LslShapes = Shapes(
 @Composable
 fun MyApplicationTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = ChalkAndMatting,
+        colorScheme = CrestNight,
         typography = Typography,
         shapes = LslShapes,
         content = content

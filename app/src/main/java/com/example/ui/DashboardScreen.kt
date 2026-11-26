@@ -58,7 +58,7 @@ fun DashboardScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Lsl.Pitch)
+            .background(Lsl.Night)
             .testTag("dashboard"),
         contentPadding = WindowInsets.safeDrawing.asPaddingValues().let {
             PaddingValues(start = 16.dp, end = 16.dp, top = it.calculateTopPadding() + 8.dp, bottom = it.calculateBottomPadding() + 24.dp)
@@ -83,7 +83,7 @@ fun DashboardScreen(
                     Text(
                         greeting(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = Lsl.Moss
+                        color = Lsl.Mist
                     )
                 }
             }
@@ -109,13 +109,13 @@ fun DashboardScreen(
         // Navigation list with real counts
         item {
             Panel(contentPadding = PaddingValues(vertical = 4.dp)) {
-                NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Mint, onManageTeamsClick, Modifier.testTag("nav_teams"))
+                NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Flame, onManageTeamsClick, Modifier.testTag("nav_teams"))
                 NavDivider()
-                NavRow(Icons.Default.EmojiEvents, "Tournaments", countLabel(tournaments.size, "league"), Lsl.Sun, onTournamentsClick, Modifier.testTag("nav_tournaments"))
+                NavRow(Icons.Default.EmojiEvents, "Tournaments", countLabel(tournaments.size, "league"), Lsl.Gold, onTournamentsClick, Modifier.testTag("nav_tournaments"))
                 NavDivider()
                 NavRow(Icons.Default.Leaderboard, "Player stats", countLabel(players.distinctBy { it.playerName }.size, "player"), Lsl.Sky, onLeaderboardClick, Modifier.testTag("nav_stats"))
                 NavDivider()
-                NavRow(Icons.Default.History, "Match history", countLabel(completed.size, "match", "matches"), Lsl.Lilac, onHistoryClick, Modifier.testTag("nav_history"))
+                NavRow(Icons.Default.History, "Match history", countLabel(completed.size, "match", "matches"), Lsl.Violet, onHistoryClick, Modifier.testTag("nav_history"))
             }
         }
 
@@ -128,7 +128,7 @@ fun DashboardScreen(
                     if (completed.size > 3) {
                         Text(
                             "See all",
-                            color = Lsl.Mint,
+                            color = Lsl.Flame,
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).pressable(onClick = onHistoryClick).padding(8.dp)
                         )
@@ -144,7 +144,7 @@ fun DashboardScreen(
                     Text(
                         "Results, top scorers and the player of the match show up here after your first game.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Lsl.Moss
+                        color = Lsl.Mist
                     )
                 }
             }
@@ -188,7 +188,7 @@ private fun NavRow(icon: ImageVector, title: String, meta: String, tint: Color, 
         ) { Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp)) }
         Spacer(Modifier.width(14.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, modifier = Modifier.weight(1f))
-        Text(meta, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+        Text(meta, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Lsl.Fade)
     }
 }
@@ -199,13 +199,13 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(if (hasLive) Lsl.Turf else Lsl.Mint)
+            .background(if (hasLive) Lsl.Deck else Lsl.Flame)
             .pressable(pressedScale = 0.98f, onClick = onClick)
             .padding(20.dp)
             .testTag("hero_promo_card"),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val fg = if (hasLive) Lsl.Chalk else Lsl.MintDeep
+        val fg = if (hasLive) Lsl.Chalk else Lsl.FlameInk
         Column(Modifier.weight(1f)) {
             Text(
                 when {
@@ -226,13 +226,13 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
         }
         Spacer(Modifier.width(12.dp))
         Box(
-            Modifier.size(52.dp).clip(CircleShape).background(if (hasLive) Lsl.Mint else Lsl.MintDeep),
+            Modifier.size(52.dp).clip(CircleShape).background(if (hasLive) Lsl.Flame else Lsl.FlameInk),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 if (canStart) Icons.Default.SportsCricket else Icons.Default.GroupAdd,
                 contentDescription = null,
-                tint = if (hasLive) Lsl.MintDeep else Lsl.Mint,
+                tint = if (hasLive) Lsl.FlameInk else Lsl.Flame,
                 modifier = Modifier.size(26.dp)
             )
         }
@@ -259,7 +259,7 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
             Spacer(Modifier.width(8.dp))
             Text("Live", style = MaterialTheme.typography.labelLarge, color = Lsl.Tape)
             Spacer(Modifier.weight(1f))
-            Text("Tap to keep scoring", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+            Text("Tap to keep scoring", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -267,7 +267,7 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(batting, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("v $bowling", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("v $bowling", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -277,14 +277,14 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
                     fontSize = 32.sp,
                     color = Lsl.Chalk
                 )
-                Text("${card.totalOversString} of ${match.overs} ov", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                Text("${card.totalOversString} of ${match.overs} ov", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
             }
         }
         if (match.currentInnings == 2 && match.targetRuns > 0) {
             Spacer(Modifier.height(8.dp))
             val need = (match.targetRuns - card.totalRuns).coerceAtLeast(0)
             val left = (match.overs * 6 - card.legalBallsBowled).coerceAtLeast(0)
-            Text("Need $need off $left balls", style = MaterialTheme.typography.labelLarge, color = Lsl.Sun)
+            Text("Need $need off $left balls", style = MaterialTheme.typography.labelLarge, color = Lsl.Gold)
         }
     }
 }
@@ -304,19 +304,19 @@ fun ResultCard(match: MatchEntity, onClick: () -> Unit, onLongClick: (() -> Unit
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Lsl.Turf)
+            .background(Lsl.Deck)
             .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
             .padding(16.dp)
     ) {
-        Text("$date, ${match.overs} overs", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+        Text("$date, ${match.overs} overs", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
         Spacer(Modifier.height(8.dp))
         TeamScoreLine(firstName, "${first.totalRuns}/${first.totalWickets}", first.totalOversString, match.winnerTeamId == firstId)
         Spacer(Modifier.height(6.dp))
         TeamScoreLine(secondName, "${second.totalRuns}/${second.totalWickets}", second.totalOversString, match.winnerTeamId == secondId)
         Spacer(Modifier.height(10.dp))
-        Text(match.resultText.ifEmpty { "Result pending" }, style = MaterialTheme.typography.labelLarge, color = Lsl.Sun)
+        Text(match.resultText.ifEmpty { "Result pending" }, style = MaterialTheme.typography.labelLarge, color = Lsl.Gold)
         if (match.topPerformer.isNotEmpty()) {
-            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
         }
     }
 }
@@ -329,13 +329,13 @@ private fun TeamScoreLine(name: String, score: String, overs: String, won: Boole
         Text(
             name,
             style = MaterialTheme.typography.titleSmall,
-            color = if (won) Lsl.Chalk else Lsl.Moss,
+            color = if (won) Lsl.Chalk else Lsl.Mist,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
         if (won) {
-            Icon(Icons.Default.EmojiEvents, "Winner", tint = Lsl.Sun, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.EmojiEvents, "Winner", tint = Lsl.Gold, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
         }
         Text(
@@ -343,7 +343,7 @@ private fun TeamScoreLine(name: String, score: String, overs: String, won: Boole
             fontFamily = Scoreboard,
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
-            color = if (won) Lsl.Chalk else Lsl.Moss
+            color = if (won) Lsl.Chalk else Lsl.Mist
         )
         Text(" ($overs)", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade)
     }

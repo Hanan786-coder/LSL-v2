@@ -111,7 +111,7 @@ fun LeaderboardScreen(
                     onValueChange = { query = it },
                     placeholder = { Text("Search player or team") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
-                    trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear search", tint = Lsl.Moss) } },
+                    trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear search", tint = Lsl.Mist) } },
                     singleLine = true,
                     colors = lslFieldColors(),
                     shape = RoundedCornerShape(14.dp),
@@ -163,13 +163,13 @@ private fun CareerRow(rank: Int, c: Career, m: Metric) {
     } else {
         "${c.wickets} for ${c.conceded} in ${c.oversString} ov, econ ${c.economy.fmt(1)}"
     }
-    val medal = when (rank) { 0 -> Lsl.Sun; 1 -> Lsl.Chalk; 2 -> Lsl.Flame; else -> Lsl.Fade }
+    val medal = when (rank) { 0 -> Lsl.Gold; 1 -> Lsl.Chalk; 2 -> Lsl.Bronze; else -> Lsl.Fade }
 
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Lsl.Turf)
+            .background(Lsl.Deck)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -188,7 +188,7 @@ private fun CareerRow(rank: Int, c: Career, m: Metric) {
             Text(
                 "${c.teams.joinToString(", ")}, ${c.matches} match${if (c.matches == 1) "" else "es"}",
                 style = MaterialTheme.typography.labelSmall,
-                color = Lsl.Moss,
+                color = Lsl.Mist,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -197,7 +197,7 @@ private fun CareerRow(rank: Int, c: Career, m: Metric) {
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
             Text(big, fontFamily = Scoreboard, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, color = Lsl.Chalk)
-            Text(unit, style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+            Text(unit, style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
         }
     }
 }

@@ -65,7 +65,7 @@ fun LslScreen(
                             Text(
                                 subtitle,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Lsl.Moss,
+                                color = Lsl.Mist,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -81,13 +81,13 @@ fun LslScreen(
                 },
                 actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Lsl.Pitch,
-                    scrolledContainerColor = Lsl.Pitch
+                    containerColor = Lsl.Night,
+                    scrolledContainerColor = Lsl.Night
                 )
             )
         },
         floatingActionButton = floatingActionButton,
-        containerColor = Lsl.Pitch,
+        containerColor = Lsl.Night,
         content = content
     )
 }
@@ -99,7 +99,7 @@ fun LslScreen(
 @Composable
 fun Panel(
     modifier: Modifier = Modifier,
-    color: Color = Lsl.Turf,
+    color: Color = Lsl.Deck,
     shape: RoundedCornerShape = RoundedCornerShape(16.dp),
     contentPadding: PaddingValues = PaddingValues(16.dp),
     onClick: (() -> Unit)? = null,
@@ -122,7 +122,7 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier, trailing: @Composa
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text, style = MaterialTheme.typography.titleSmall, color = Lsl.Moss)
+        Text(text, style = MaterialTheme.typography.titleSmall, color = Lsl.Mist)
         trailing?.invoke()
     }
 }
@@ -178,11 +178,11 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    color: Color = Lsl.Mint,
-    contentColor: Color = Lsl.MintDeep,
+    color: Color = Lsl.Flame,
+    contentColor: Color = Lsl.FlameInk,
     height: Dp = 52.dp
 ) {
-    val bg by animateColorAsState(if (enabled) color else Lsl.TurfRaised, label = "btn-bg")
+    val bg by animateColorAsState(if (enabled) color else Lsl.DeckRaised, label = "btn-bg")
     val fg by animateColorAsState(if (enabled) contentColor else Lsl.Fade, label = "btn-fg")
     Row(
         modifier = modifier
@@ -216,7 +216,7 @@ fun QuietButton(
         modifier = modifier
             .height(height)
             .clip(RoundedCornerShape(12.dp))
-            .background(Lsl.TurfRaised)
+            .background(Lsl.DeckRaised)
             .pressable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.Center,
@@ -241,11 +241,11 @@ fun ChoiceChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    accent: Color = Lsl.Mint,
+    accent: Color = Lsl.Flame,
     leading: (@Composable () -> Unit)? = null
 ) {
-    val bg by animateColorAsState(if (selected) accent else Lsl.TurfRaised, tween(160), label = "chip-bg")
-    val fg by animateColorAsState(if (selected) Lsl.Pitch else Lsl.Chalk, tween(160), label = "chip-fg")
+    val bg by animateColorAsState(if (selected) accent else Lsl.DeckRaised, tween(160), label = "chip-bg")
+    val fg by animateColorAsState(if (selected) Lsl.Night else Lsl.Chalk, tween(160), label = "chip-fg")
     Row(
         modifier = modifier
             .heightIn(min = 40.dp)
@@ -277,12 +277,12 @@ fun ChoiceChip(
 data class BallTone(val bg: Color, val fg: Color)
 
 fun ballTone(label: String): BallTone = when {
-    label.startsWith("W") -> BallTone(Lsl.Tape, Lsl.Pitch)
-    label.endsWith("wd") || label.endsWith("nb") -> BallTone(Lsl.Lilac.copy(alpha = 0.22f), Lsl.Lilac)
-    label.endsWith("lb") || label.endsWith("b") -> BallTone(Lsl.Lilac.copy(alpha = 0.12f), Lsl.Lilac)
-    label == "6" -> BallTone(Lsl.Sky, Lsl.Pitch)
-    label == "4" -> BallTone(Lsl.Sun, Lsl.Pitch)
-    label == "0" -> BallTone(Lsl.TurfRaised, Lsl.Moss)
+    label.startsWith("W") -> BallTone(Lsl.Tape, Lsl.Night)
+    label.endsWith("wd") || label.endsWith("nb") -> BallTone(Lsl.Violet.copy(alpha = 0.22f), Lsl.Violet)
+    label.endsWith("lb") || label.endsWith("b") -> BallTone(Lsl.Violet.copy(alpha = 0.12f), Lsl.Violet)
+    label == "6" -> BallTone(Lsl.Sky, Lsl.Night)
+    label == "4" -> BallTone(Lsl.Gold, Lsl.Night)
+    label == "0" -> BallTone(Lsl.DeckRaised, Lsl.Mist)
     else -> BallTone(Lsl.Chalk.copy(alpha = 0.12f), Lsl.Chalk)
 }
 
@@ -316,8 +316,8 @@ fun BallChip(label: String, modifier: Modifier = Modifier, size: Dp = 34.dp) {
 // ---------------------------------------------------------------------------
 
 private val monogramColors = listOf(
-    Color(0xFF6FE3B5), Color(0xFFFFC94A), Color(0xFF7CC8FF), Color(0xFFFF9E7A),
-    Color(0xFFC6A8FF), Color(0xFFA7E36F), Color(0xFFFF8FB8), Color(0xFF5FD3E0)
+    Color(0xFFFF7A2F), Color(0xFFFFC53D), Color(0xFF5CC8FF), Color(0xFF7EE08A),
+    Color(0xFFB69CFF), Color(0xFFFF8FB1), Color(0xFF4FD8C4), Color(0xFFF2B880)
 )
 
 fun teamColor(name: String): Color =
@@ -374,10 +374,10 @@ fun EmptyState(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(Lsl.TurfRaised),
+                .background(Lsl.DeckRaised),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Lsl.Mint, modifier = Modifier.size(30.dp))
+            Icon(icon, contentDescription = null, tint = Lsl.Flame, modifier = Modifier.size(30.dp))
         }
         Spacer(Modifier.height(16.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, textAlign = TextAlign.Center)
@@ -385,7 +385,7 @@ fun EmptyState(
         Text(
             body,
             style = MaterialTheme.typography.bodyMedium,
-            color = Lsl.Moss,
+            color = Lsl.Mist,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 320.dp)
         )
@@ -411,34 +411,34 @@ fun ConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Lsl.Turf,
+        containerColor = Lsl.Deck,
         shape = RoundedCornerShape(24.dp),
         title = { Text(title, style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk) },
-        text = { Text(body, style = MaterialTheme.typography.bodyMedium, color = Lsl.Moss) },
+        text = { Text(body, style = MaterialTheme.typography.bodyMedium, color = Lsl.Mist) },
         confirmButton = {
             TextButton(onClick = { onConfirm(); onDismiss() }) {
-                Text(confirmText, color = if (destructive) Lsl.Tape else Lsl.Mint, fontWeight = FontWeight.Bold)
+                Text(confirmText, color = if (destructive) Lsl.Tape else Lsl.Flame, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = Lsl.Moss) }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Lsl.Mist) }
         }
     )
 }
 
 @Composable
 fun lslFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Lsl.Mint,
+    focusedBorderColor = Lsl.Flame,
     unfocusedBorderColor = Lsl.Line,
-    focusedLabelColor = Lsl.Mint,
-    unfocusedLabelColor = Lsl.Moss,
+    focusedLabelColor = Lsl.Flame,
+    unfocusedLabelColor = Lsl.Mist,
     focusedTextColor = Lsl.Chalk,
     unfocusedTextColor = Lsl.Chalk,
-    cursorColor = Lsl.Mint,
-    focusedLeadingIconColor = Lsl.Mint,
-    unfocusedLeadingIconColor = Lsl.Moss,
-    focusedContainerColor = Lsl.Turf,
-    unfocusedContainerColor = Lsl.Turf,
+    cursorColor = Lsl.Flame,
+    focusedLeadingIconColor = Lsl.Flame,
+    unfocusedLeadingIconColor = Lsl.Mist,
+    focusedContainerColor = Lsl.Deck,
+    unfocusedContainerColor = Lsl.Deck,
     focusedPlaceholderColor = Lsl.Fade,
     unfocusedPlaceholderColor = Lsl.Fade
 )
@@ -448,7 +448,7 @@ fun lslFieldColors() = OutlinedTextFieldDefaults.colors(
 fun Stat(value: String, label: String, modifier: Modifier = Modifier, valueColor: Color = Lsl.Chalk, alignEnd: Boolean = false) {
     Column(modifier = modifier, horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
         Text(value, fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = valueColor, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1)
     }
 }
 

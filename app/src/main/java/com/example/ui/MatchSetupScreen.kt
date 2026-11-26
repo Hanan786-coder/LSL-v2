@@ -101,7 +101,7 @@ fun MatchSetupScreen(
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ChoiceChip("Friendly", tournamentId == null, { tournamentId = null })
                             tournaments.forEach { t ->
-                                ChoiceChip(t.name, tournamentId == t.id, { tournamentId = t.id }, accent = Lsl.Sun)
+                                ChoiceChip(t.name, tournamentId == t.id, { tournamentId = t.id }, accent = Lsl.Gold)
                             }
                         }
                     }
@@ -111,7 +111,7 @@ fun MatchSetupScreen(
                 StepHeader(2, "Overs per side")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        Modifier.size(52.dp).clip(CircleShape).background(Lsl.TurfRaised)
+                        Modifier.size(52.dp).clip(CircleShape).background(Lsl.DeckRaised)
                             .pressable(enabled = overs > 1) { overs-- },
                         contentAlignment = Alignment.Center
                     ) { Icon(Icons.Default.Remove, "Fewer overs", tint = Lsl.Chalk) }
@@ -126,11 +126,11 @@ fun MatchSetupScreen(
                     ) { v ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                             Text("$v", fontFamily = Scoreboard, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp, color = Lsl.Chalk, lineHeight = 48.sp)
-                            Text("${v * 6} balls each", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                            Text("${v * 6} balls each", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
                         }
                     }
                     Box(
-                        Modifier.size(52.dp).clip(CircleShape).background(Lsl.TurfRaised)
+                        Modifier.size(52.dp).clip(CircleShape).background(Lsl.DeckRaised)
                             .pressable(enabled = overs < 50) { overs++ },
                         contentAlignment = Alignment.Center
                     ) { Icon(Icons.Default.Add, "More overs", tint = Lsl.Chalk) }
@@ -158,7 +158,7 @@ fun MatchSetupScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(Lsl.Pitch)
+                    .background(Lsl.Night)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .navigationBarsPadding()
             ) {
@@ -166,7 +166,7 @@ fun MatchSetupScreen(
                     Text(
                         s,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (problem == null) Lsl.Mint else Lsl.Moss,
+                        color = if (problem == null) Lsl.Flame else Lsl.Mist,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
@@ -201,13 +201,13 @@ fun MatchSetupScreen(
 
     pickingSlot?.let { slot ->
         val other = if (slot == 0) teamB else teamA
-        ModalBottomSheet(onDismissRequest = { pickingSlot = null }, containerColor = Lsl.Turf) {
+        ModalBottomSheet(onDismissRequest = { pickingSlot = null }, containerColor = Lsl.Deck) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
                 Text(if (slot == 0) "Home team" else "Away team", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
                 Spacer(Modifier.height(12.dp))
                 val list = teams.filter { it.id != other?.id }
                 if (list.isEmpty()) {
-                    Text("No other teams yet. Add one from Teams on the home screen.", color = Lsl.Moss)
+                    Text("No other teams yet. Add one from Teams on the home screen.", color = Lsl.Mist)
                 }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 460.dp)) {
                     items(list, key = { it.id }) { t ->
@@ -216,7 +216,7 @@ fun MatchSetupScreen(
                             Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Lsl.TurfRaised)
+                                .background(Lsl.DeckRaised)
                                 .pressable {
                                     if (slot == 0) teamA = t else teamB = t
                                     pickingSlot = null
@@ -231,7 +231,7 @@ fun MatchSetupScreen(
                                 Text(
                                     "$n player${if (n == 1) "" else "s"}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (n < 2) Lsl.Tape else Lsl.Moss
+                                    color = if (n < 2) Lsl.Tape else Lsl.Mist
                                 )
                             }
                         }
@@ -246,10 +246,10 @@ fun MatchSetupScreen(
 private fun StepHeader(n: Int, title: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
         Box(
-            Modifier.size(26.dp).clip(CircleShape).border(1.5.dp, Lsl.Mint, CircleShape),
+            Modifier.size(26.dp).clip(CircleShape).border(1.5.dp, Lsl.Flame, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text("$n", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Lsl.Mint)
+            Text("$n", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Lsl.Flame)
         }
         Spacer(Modifier.width(10.dp))
         Text(title, style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk)
@@ -262,7 +262,7 @@ private fun TeamSlot(team: TeamEntity?, placeholder: String, modifier: Modifier,
         modifier
             .height(132.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(Lsl.Turf)
+            .background(Lsl.Deck)
             .then(if (team == null) Modifier.border(1.5.dp, Lsl.Line, RoundedCornerShape(20.dp)) else Modifier)
             .pressable(onClick = onClick)
             .padding(12.dp),
@@ -274,11 +274,11 @@ private fun TeamSlot(team: TeamEntity?, placeholder: String, modifier: Modifier,
         }) { t ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (t == null) {
-                    Box(Modifier.size(52.dp).clip(CircleShape).background(Lsl.TurfRaised), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Add, null, tint = Lsl.Mint)
+                    Box(Modifier.size(52.dp).clip(CircleShape).background(Lsl.DeckRaised), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, null, tint = Lsl.Flame)
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(placeholder, style = MaterialTheme.typography.titleSmall, color = Lsl.Moss)
+                    Text(placeholder, style = MaterialTheme.typography.titleSmall, color = Lsl.Mist)
                 } else {
                     Monogram(t.name, size = 52.dp)
                     Spacer(Modifier.height(8.dp))
@@ -290,7 +290,7 @@ private fun TeamSlot(team: TeamEntity?, placeholder: String, modifier: Modifier,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center
                     )
-                    Text("${t.playerNames.toPlayerList().size} players", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                    Text("${t.playerNames.toPlayerList().size} players", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
                 }
             }
         }
@@ -324,8 +324,8 @@ private fun TossPanel(
                         cameraDistance = 12f * density
                     }
                     .clip(CircleShape)
-                    .background(if (ready) Lsl.Sun else Lsl.TurfRaised)
-                    .border(3.dp, if (ready) Lsl.Sun.copy(alpha = 0.5f) else Lsl.Line, CircleShape)
+                    .background(if (ready) Lsl.Gold else Lsl.DeckRaised)
+                    .border(3.dp, if (ready) Lsl.Gold.copy(alpha = 0.5f) else Lsl.Line, CircleShape)
                     .pressable(enabled = ready && !flipping) {
                         val a = teamA ?: return@pressable
                         val b = teamB ?: return@pressable
@@ -351,7 +351,7 @@ private fun TossPanel(
                     fontFamily = Scoreboard,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = if (winner != null && !flipping) 26.sp else 18.sp,
-                    color = Lsl.Pitch
+                    color = Lsl.Night
                 )
             }
             Spacer(Modifier.width(16.dp))
@@ -369,7 +369,7 @@ private fun TossPanel(
                 Text(
                     if (winner == null) "Or choose who bats first below." else "What do they choose?",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Lsl.Moss
+                    color = Lsl.Mist
                 )
             }
         }
@@ -383,7 +383,7 @@ private fun TossPanel(
                     ChoiceChip("Bowl first", battingFirst?.id == loser.id, { onChoose(loser) }, Modifier.weight(1f))
                 }
             } else if (!flipping) {
-                Text("Batting first", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+                Text("Batting first", style = MaterialTheme.typography.labelMedium, color = Lsl.Mist)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ChoiceChip(teamA!!.name, battingFirst?.id == teamA.id, { onChoose(teamA) }, Modifier.weight(1f))

@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     viewModel.goBack()
                 }
 
-                Box(Modifier.fillMaxSize().background(Lsl.Pitch)) {
+                Box(Modifier.fillMaxSize().background(Lsl.Night)) {
                     AnimatedContent(
                         targetState = currentScreen,
                         transitionSpec = {

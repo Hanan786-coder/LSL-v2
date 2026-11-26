@@ -51,8 +51,8 @@ fun TeamsManageScreen(
             if (teams.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { creating = true },
-                    containerColor = Lsl.Mint,
-                    contentColor = Lsl.MintDeep,
+                    containerColor = Lsl.Flame,
+                    contentColor = Lsl.FlameInk,
                     icon = { Icon(Icons.Default.Add, null) },
                     text = { Text("New team") },
                     modifier = Modifier.testTag("add_team_fab")
@@ -129,7 +129,7 @@ private fun TeamCard(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Lsl.Turf)
+            .background(Lsl.Deck)
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
     ) {
         Row(
@@ -149,12 +149,12 @@ private fun TeamCard(
                         if (tournament != null) append(", ${tournament.name}")
                     },
                     style = MaterialTheme.typography.labelMedium,
-                    color = Lsl.Moss,
+                    color = Lsl.Mist,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Icon(Icons.Default.ExpandMore, if (expanded) "Hide players" else "Show players", tint = Lsl.Moss, modifier = Modifier.graphicsLayer { rotationZ = chevron })
+            Icon(Icons.Default.ExpandMore, if (expanded) "Hide players" else "Show players", tint = Lsl.Mist, modifier = Modifier.graphicsLayer { rotationZ = chevron })
         }
         if (expanded) {
             FlowRow(
@@ -164,7 +164,7 @@ private fun TeamCard(
             ) {
                 players.forEach { p ->
                     Row(
-                        Modifier.clip(RoundedCornerShape(10.dp)).background(Lsl.TurfRaised).padding(horizontal = 10.dp, vertical = 6.dp),
+                        Modifier.clip(RoundedCornerShape(10.dp)).background(Lsl.DeckRaised).padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(p, style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
@@ -200,7 +200,7 @@ private fun TeamEditorSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Lsl.Turf,
+        containerColor = Lsl.Deck,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Column(
@@ -239,7 +239,7 @@ private fun TeamEditorSheet(
                 keyboardActions = KeyboardActions(onDone = { commitEntry() }),
                 trailingIcon = {
                     IconButton(onClick = { commitEntry() }, enabled = entry.isNotBlank()) {
-                        Icon(Icons.Default.PersonAdd, "Add player", tint = if (entry.isNotBlank()) Lsl.Mint else Lsl.Fade)
+                        Icon(Icons.Default.PersonAdd, "Add player", tint = if (entry.isNotBlank()) Lsl.Flame else Lsl.Fade)
                     }
                 },
                 colors = lslFieldColors(),
@@ -248,22 +248,22 @@ private fun TeamEditorSheet(
             )
 
             if (players.isEmpty()) {
-                Text("Batting order follows the order you add players. You need at least 2.", style = MaterialTheme.typography.bodySmall, color = Lsl.Moss)
+                Text("Batting order follows the order you add players. You need at least 2.", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     players.forEachIndexed { i, p ->
                         Row(
                             Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Lsl.TurfRaised)
+                                .background(Lsl.DeckRaised)
                                 .padding(start = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("${i + 1}", style = MaterialTheme.typography.labelSmall, color = Lsl.Mint)
+                            Text("${i + 1}", style = MaterialTheme.typography.labelSmall, color = Lsl.Flame)
                             Spacer(Modifier.width(6.dp))
                             Text(p, style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
                             IconButton(onClick = { players.removeAt(i) }, modifier = Modifier.size(34.dp)) {
-                                Icon(Icons.Default.Close, "Remove $p", tint = Lsl.Moss, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, "Remove $p", tint = Lsl.Mist, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -274,7 +274,7 @@ private fun TeamEditorSheet(
                 SectionTitle("Tournament")
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ChoiceChip("None", tid == null, { tid = null })
-                    tournaments.forEach { t -> ChoiceChip(t.name, tid == t.id, { tid = t.id }, accent = Lsl.Sun) }
+                    tournaments.forEach { t -> ChoiceChip(t.name, tid == t.id, { tid = t.id }, accent = Lsl.Gold) }
                 }
             }
 

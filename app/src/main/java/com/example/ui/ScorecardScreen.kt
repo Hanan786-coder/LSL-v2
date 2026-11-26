@@ -79,9 +79,9 @@ fun ScorecardScreen(
             IconButton(onClick = {
                 val text = summaryText(m, firstName, secondName, first, second)
                 copyToClipboard(context, text)
-            }) { Icon(Icons.Default.ContentCopy, "Copy summary", tint = Lsl.Moss) }
+            }) { Icon(Icons.Default.ContentCopy, "Copy summary", tint = Lsl.Mist) }
             IconButton(onClick = { shareText(context, summaryText(m, firstName, secondName, first, second)) }) {
-                Icon(Icons.Default.Share, "Share summary", tint = Lsl.Mint)
+                Icon(Icons.Default.Share, "Share summary", tint = Lsl.Flame)
             }
         }
     ) { inner ->
@@ -118,13 +118,13 @@ fun SegmentedTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) 
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Lsl.Turf)
+            .background(Lsl.Deck)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         labels.forEachIndexed { i, l ->
-            val bg by animateColorAsState(if (i == selected) Lsl.TurfRaised else Color.Transparent, tween(180), label = "seg")
-            val fg by animateColorAsState(if (i == selected) Lsl.Chalk else Lsl.Moss, tween(180), label = "seg-fg")
+            val bg by animateColorAsState(if (i == selected) Lsl.DeckRaised else Color.Transparent, tween(180), label = "seg")
+            val fg by animateColorAsState(if (i == selected) Lsl.Chalk else Lsl.Mist, tween(180), label = "seg-fg")
             Box(
                 Modifier
                     .weight(1f)
@@ -177,11 +177,11 @@ private fun SummaryTab(
                     ManhattanChart(first.overs, second.overs, match.overs)
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        LegendDot(Lsl.Mint); Text(" $firstName", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1)
+                        LegendDot(Lsl.Flame); Text(" $firstName", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1)
                         Spacer(Modifier.width(14.dp))
-                        LegendDot(Lsl.Sun); Text(" $secondName", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1)
+                        LegendDot(Lsl.Gold); Text(" $secondName", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1)
                         Spacer(Modifier.width(14.dp))
-                        LegendDot(Lsl.Tape); Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                        LegendDot(Lsl.Tape); Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
                     }
                 }
             }
@@ -195,7 +195,7 @@ private fun SummaryTab(
                 val bowls = (first.bowlers.values + second.bowlers.values)
                     .sortedWith(compareByDescending<BowlerLiveStats> { it.wickets }.thenBy { it.runsConceded }).take(3)
                 if (bats.isEmpty() && bowls.isEmpty()) {
-                    Text("Nothing bowled yet.", color = Lsl.Moss, style = MaterialTheme.typography.bodyMedium)
+                    Text("Nothing bowled yet.", color = Lsl.Mist, style = MaterialTheme.typography.bodyMedium)
                 }
                 bats.forEach { b ->
                     PerformerRow(b.name, "${b.runs}", "(${b.ballsFaced})${if (!b.isOut) " not out" else ""}", Icons.Default.SportsCricket)
@@ -211,7 +211,7 @@ private fun SummaryTab(
             QuietButton(
                 text = "Share with the group",
                 icon = Icons.Default.Share,
-                tint = Lsl.Mint,
+                tint = Lsl.Flame,
                 height = 52.dp,
                 onClick = onShare,
                 modifier = Modifier.fillMaxWidth()
@@ -233,14 +233,14 @@ private fun ResultBanner(match: MatchEntity) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(if (done) Lsl.Sun.copy(alpha = 0.14f) else Lsl.Turf)
+            .background(if (done) Lsl.Gold.copy(alpha = 0.14f) else Lsl.Deck)
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             if (done) Icons.Default.EmojiEvents else Icons.Default.SportsCricket,
             contentDescription = null,
-            tint = if (done) Lsl.Sun else Lsl.Mint,
+            tint = if (done) Lsl.Gold else Lsl.Flame,
             modifier = Modifier.size(40.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value }
         )
         Spacer(Modifier.height(8.dp))
@@ -252,7 +252,7 @@ private fun ResultBanner(match: MatchEntity) {
         )
         if (match.topPerformer.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.bodyMedium, color = Lsl.Moss, textAlign = TextAlign.Center)
+            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.bodyMedium, color = Lsl.Mist, textAlign = TextAlign.Center)
         }
     }
 }
@@ -263,7 +263,7 @@ private fun InningsLine(name: String, card: InningsScorecard, won: Boolean) {
         Monogram(name, size = 34.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleMedium, color = if (won) Lsl.Chalk else Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(name, style = MaterialTheme.typography.titleMedium, color = if (won) Lsl.Chalk else Lsl.Mist, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("RR ${card.runRate.fmt()}  Extras ${card.totalExtrasSum}", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade)
         }
         Text(
@@ -271,7 +271,7 @@ private fun InningsLine(name: String, card: InningsScorecard, won: Boolean) {
             fontFamily = Scoreboard,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 30.sp,
-            color = if (won) Lsl.Chalk else Lsl.Moss
+            color = if (won) Lsl.Chalk else Lsl.Mist
         )
         Text(" (${card.totalOversString})", style = MaterialTheme.typography.labelMedium, color = Lsl.Fade)
     }
@@ -284,7 +284,7 @@ private fun PerformerRow(name: String, figure: String, detail: String, icon: and
         Spacer(Modifier.width(10.dp))
         Text(name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(figure, fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Lsl.Chalk)
-        Text(" $detail", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+        Text(" $detail", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)
     }
 }
 
@@ -318,8 +318,8 @@ fun ManhattanChart(first: List<OverSummary>, second: List<OverSummary>, totalOve
                     }
                 }
             }
-            drawSet(first, Lsl.Mint, -barW * 0.55f)
-            drawSet(second, Lsl.Sun, barW * 0.55f)
+            drawSet(first, Lsl.Flame, -barW * 0.55f)
+            drawSet(second, Lsl.Gold, barW * 0.55f)
         }
         Spacer(Modifier.height(4.dp))
         Row(Modifier.fillMaxWidth()) {
@@ -353,9 +353,9 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
         item {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text("${card.totalRuns}/${card.totalWickets}", fontFamily = Scoreboard, fontWeight = FontWeight.ExtraBold, fontSize = 44.sp, color = Lsl.Chalk)
-                Text("  ${card.totalOversString} overs", style = MaterialTheme.typography.titleSmall, color = Lsl.Moss, modifier = Modifier.padding(bottom = 8.dp))
+                Text("  ${card.totalOversString} overs", style = MaterialTheme.typography.titleSmall, color = Lsl.Mist, modifier = Modifier.padding(bottom = 8.dp))
                 Spacer(Modifier.weight(1f))
-                Text("RR ${card.runRate.fmt()}", style = MaterialTheme.typography.labelLarge, color = Lsl.Moss, modifier = Modifier.padding(bottom = 8.dp))
+                Text("RR ${card.runRate.fmt()}", style = MaterialTheme.typography.labelLarge, color = Lsl.Mist, modifier = Modifier.padding(bottom = 8.dp))
             }
         }
 
@@ -364,13 +364,13 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
             Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
                 TableHeader("Batter", listOf("R", "B", "4s", "6s", "SR"))
                 if (batted.isEmpty()) {
-                    Text("$teamName haven't batted yet.", color = Lsl.Moss, modifier = Modifier.padding(16.dp))
+                    Text("$teamName haven't batted yet.", color = Lsl.Mist, modifier = Modifier.padding(16.dp))
                 }
                 batted.forEach { b ->
                     TableRow(
                         title = b.name,
                         subtitle = if (b.isOut) dismissalText(b) else "not out",
-                        subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Mint,
+                        subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Flame,
                         values = listOf("${b.runs}", "${b.ballsFaced}", "${b.fours}", "${b.sixes}", b.strikeRate.fmt(0)),
                         emphasizeFirst = true
                     )
@@ -381,7 +381,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
                     Text(
                         "${card.totalExtrasSum}  (wd ${card.extras["WD"]}, nb ${card.extras["NB"]}, b ${card.extras["BYE"]}, lb ${card.extras["LB"]})",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Lsl.Moss
+                        color = Lsl.Mist
                     )
                 }
                 if (yetToBat.isNotEmpty()) {
@@ -400,7 +400,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
             Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
                 TableHeader("Bowler", listOf("O", "R", "W", "Econ", "Ext"))
                 if (card.bowlers.isEmpty()) {
-                    Text("No balls bowled yet.", color = Lsl.Moss, modifier = Modifier.padding(16.dp))
+                    Text("No balls bowled yet.", color = Lsl.Mist, modifier = Modifier.padding(16.dp))
                 }
                 card.bowlers.values.forEach { b ->
                     TableRow(
@@ -421,13 +421,13 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Lsl.Turf)
+                        .background(Lsl.Deck)
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.width(64.dp)) {
                         Text("Over ${o.index + 1}", style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
-                        Text(o.bowler, style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(o.bowler, style = MaterialTheme.typography.labelSmall, color = Lsl.Mist, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         o.labels.take(9).forEach { BallChip(it, size = 26.dp) }
@@ -457,9 +457,9 @@ private val colW = listOf(34.dp, 30.dp, 28.dp, 28.dp, 40.dp)
 @Composable
 private fun TableHeader(first: String, cols: List<String>) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-        Text(first, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, modifier = Modifier.weight(1f))
+        Text(first, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, modifier = Modifier.weight(1f))
         cols.forEachIndexed { i, c ->
-            Text(c, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(colW[i]))
+            Text(c, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(colW[i]))
         }
     }
 }
@@ -484,7 +484,7 @@ private fun TableRow(
                 fontFamily = if (i == emphasizeIndex) Scoreboard else null,
                 fontWeight = if (i == emphasizeIndex) FontWeight.Bold else FontWeight.Normal,
                 fontSize = if (i == emphasizeIndex) 18.sp else 14.sp,
-                color = if (i == emphasizeIndex) Lsl.Chalk else Lsl.Moss,
+                color = if (i == emphasizeIndex) Lsl.Chalk else Lsl.Mist,
                 textAlign = TextAlign.End,
                 modifier = Modifier.width(colW[i])
             )
