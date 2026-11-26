@@ -15,6 +15,8 @@ sealed interface ScoreEvent {
     data class Wicket(val batter: String) : ScoreEvent
     data class OverComplete(val overNumber: Int, val runs: Int) : ScoreEvent
     data class InningsBreak(val target: Int, val chasingTeam: String) : ScoreEvent
+    data class Milestone(val batter: String, val runs: Int) : ScoreEvent
+    data class LastBatter(val batter: String) : ScoreEvent
 }
 
 fun String.toPlayerList(): List<String> =
@@ -159,8 +161,12 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
         return rosterFor(bowlingTeamId(match))
     }
 
+    /**
+     * Gully rule: the last batter can carry on alone, so the innings only ends
+     * when every player in the squad is out.
+     */
     private fun maxWicketsFor(roster: List<String>): Int =
-        if (roster.size > 1) roster.size - 1 else 10
+        if (roster.isNotEmpty()) roster.size else 10
 
     // --- Match lifecycle ---
     fun startMatch(
@@ -211,7 +217,7 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
     }
 
     private fun balls(match: MatchEntity) =
-        JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java)
+        CricketScorer.parseBalls(match.ballsJson)
 
     // --- Ball-by-ball scoring ---
     /**
@@ -224,7 +230,8 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
         isWicket: Boolean = false,
         wicketType: String? = null,
         dismissedPlayer: String? = null,
-        incomingBatter: String? = null
+        incomingBatter: String? = null,
+        fielder: String? = null
     ) {
         val match = activeMatch.value ?: return
         if (match.status != "ONGOING") return
@@ -259,14 +266,16 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
             nonStriker = nonStriker,
             bowler = match.currentBowler,
             dismissedPlayer = dismissed,
-            innings = inningsId
+            innings = inningsId,
+            fielder = if (isWicket) fielder?.takeIf { it.isNotBlank() } else null
         )
         balls.add(ball)
+        val alone = nonStriker.isBlank()
 
         // Strike rotation on runs actually run
         var nextStriker = striker
         var nextNonStriker = nonStriker
-        if (runs % 2 == 1) {
+        if (runs % 2 == 1 && !alone) {
             nextStriker = nonStriker
             nextNonStriker = striker
         }
@@ -276,13 +285,24 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
             val replacement = incomingBatter ?: ""
             if (nextStriker == dismissed) nextStriker = replacement
             else if (nextNonStriker == dismissed) nextNonStriker = replacement
+            // Nobody left to come in: the survivor bats on alone and always faces
+            if (nextStriker.isBlank() && nextNonStriker.isNotBlank()) {
+                nextStriker = nextNonStriker
+                nextNonStriker = ""
+            }
         }
 
         val newLegalCount = if (isWideOrNb) legalCount else legalCount + 1
         val overComplete = !isWideOrNb && newLegalCount % 6 == 0
-        if (overComplete) {
+        if (overComplete && nextNonStriker.isNotBlank() && nextStriker.isNotBlank()) {
             val t = nextStriker; nextStriker = nextNonStriker; nextNonStriker = t
         }
+
+        // Milestones for the batter who scored off the bat
+        val batRuns = if (extraType == null || extraType == "NO_BALL") runs else 0
+        val before = CricketScorer.calculateInningsScorecard(balls.dropLast(1), inningsId, emptyList()).batsmen[striker]?.runs ?: 0
+        val milestone = listOf(100, 50).firstOrNull { before < it && before + batRuns >= it }
+        val becameAlone = dismissed != null && !alone && nextNonStriker.isBlank() && nextStriker.isNotBlank()
 
         viewModelScope.launch {
             val updated = match.copy(
@@ -292,6 +312,7 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
             )
 
             // Celebrate first, then settle state
+            if (milestone != null) _events.tryEmit(ScoreEvent.Milestone(striker, milestone))
             when {
                 isWicket -> _events.tryEmit(ScoreEvent.Wicket(dismissed ?: striker))
                 extraType == null && runs == 6 -> _events.tryEmit(ScoreEvent.Six)
@@ -301,6 +322,7 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
             }
 
             val ended = settleInnings(updated, balls, forceEnd = false)
+            if (!ended && becameAlone) _events.tryEmit(ScoreEvent.LastBatter(nextStriker))
             if (!ended && overComplete) {
                 val card = CricketScorer.calculateInningsScorecard(balls, inningsId, emptyList())
                 _events.tryEmit(ScoreEvent.OverComplete(newLegalCount / 6, card.overs.lastOrNull()?.runs ?: 0))
@@ -420,6 +442,7 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
 
     fun swapStrike() {
         val match = activeMatch.value ?: return
+        if (match.currentNonStriker.isBlank() || match.currentStriker.isBlank()) return
         viewModelScope.launch {
             repository.insertMatch(
                 match.copy(currentStriker = match.currentNonStriker, currentNonStriker = match.currentStriker)

@@ -65,7 +65,7 @@ fun ScorecardScreen(
     val secondId = viewModel.battingTeamId(m, 2)
     val firstName = viewModel.teamName(m, firstId)
     val secondName = viewModel.teamName(m, secondId)
-    val balls = remember(m.ballsJson) { JsonHelper.listFromJson(m.ballsJson, BallInfo::class.java) }
+    val balls = remember(m.ballsJson) { CricketScorer.parseBalls(m.ballsJson) }
     val first = remember(balls, teams) { CricketScorer.calculateInningsScorecard(balls, 1, viewModel.rosterFor(firstId)) }
     val second = remember(balls, teams) { CricketScorer.calculateInningsScorecard(balls, 2, viewModel.rosterFor(secondId)) }
 
@@ -441,13 +441,18 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
 
 private fun dismissalText(b: BatsmanLiveStats): String {
     val by = b.bowlerName
+    val f = b.fielderName
     return when (b.outType) {
         "BOWLED" -> "b $by"
-        "CAUGHT" -> "c & b $by"
+        "CAUGHT" -> when {
+            f == null -> "caught b $by"
+            f == by -> "c & b $by"
+            else -> "c $f b $by"
+        }
         "LBW" -> "lbw b $by"
-        "STUMPED" -> "st b $by"
+        "STUMPED" -> if (f != null) "st $f b $by" else "st b $by"
         "HIT_WICKET" -> "hit wicket b $by"
-        "RUN_OUT" -> "run out"
+        "RUN_OUT" -> if (f != null) "run out ($f)" else "run out"
         else -> "out"
     }
 }

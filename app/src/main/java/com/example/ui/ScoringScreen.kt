@@ -26,9 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -53,6 +55,11 @@ import com.example.ui.theme.Scoreboard
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private data class Banner(val text: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val color: Color)
+
+/** Wicket types where the fielding side credits a fielder. */
+private val FielderWickets = setOf("CAUGHT", "RUN_OUT", "STUMPED")
 
 private val WicketTypes = listOf(
     "BOWLED" to "Bowled",
@@ -108,7 +115,7 @@ fun ScoringScreen(
         viewModel.rosterFor(viewModel.bowlingTeamId(activeMatch))
     }
     val ballsList = remember(activeMatch.ballsJson) {
-        JsonHelper.listFromJson(activeMatch.ballsJson, BallInfo::class.java)
+        CricketScorer.parseBalls(activeMatch.ballsJson)
     }
     val info = remember(ballsList, activeMatch.currentInnings, battingRoster) {
         CricketScorer.calculateInningsScorecard(ballsList, activeMatch.currentInnings, battingRoster)
@@ -120,7 +127,10 @@ fun ScoringScreen(
     var pickBatterForStrikerEnd by remember { mutableStateOf<Boolean?>(null) }
     var confirmEndInnings by remember { mutableStateOf(false) }
     var inningsBreak by remember { mutableStateOf<ScoreEvent.InningsBreak?>(null) }
-    var overToast by remember { mutableStateOf<ScoreEvent.OverComplete?>(null) }
+    var banner by remember { mutableStateOf<Banner?>(null) }
+    // Scoreboard glow: tinted for a moment by the colour of the outcome
+    val glow = remember { Animatable(Color.Transparent) }
+    val scope = rememberCoroutineScope()
 
     // Celebration burst
     var burst by remember { mutableStateOf<ScoreEvent?>(null) }
@@ -136,15 +146,33 @@ fun ScoringScreen(
             when (e) {
                 is ScoreEvent.Four, is ScoreEvent.Six, is ScoreEvent.Wicket -> {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    if (!reduceMotion) { burst = e; burstKey++ }
+                    val c = when (e) { is ScoreEvent.Four -> Lsl.Gold; is ScoreEvent.Six -> Lsl.Sky; else -> Lsl.Tape }
+                    if (!reduceMotion) {
+                        burst = e; burstKey++
+                        scope.launch {
+                            glow.snapTo(c.copy(alpha = 0.26f))
+                            glow.animateTo(c.copy(alpha = 0f), tween(900, easing = LinearOutSlowInEasing))
+                        }
+                    }
                 }
-                is ScoreEvent.OverComplete -> overToast = e
+                is ScoreEvent.OverComplete -> banner = Banner(
+                    "End of over ${e.overNumber}: ${e.runs} run${if (e.runs == 1) "" else "s"}",
+                    Icons.Default.CheckCircle, Lsl.Chalk
+                )
+                is ScoreEvent.Milestone -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    banner = Banner("${e.batter} reaches ${e.runs}!", Icons.Default.Star, Lsl.Gold)
+                }
+                is ScoreEvent.LastBatter -> banner = Banner(
+                    "${e.batter} bats on alone. Last wicket ends the innings.",
+                    Icons.Default.PersonOutline, Lsl.Flame
+                )
                 is ScoreEvent.InningsBreak -> inningsBreak = e
             }
         }
     }
-    LaunchedEffect(overToast) {
-        if (overToast != null) { delay(2200); overToast = null }
+    LaunchedEffect(banner) {
+        if (banner != null) { delay(2600); banner = null }
     }
 
     fun score(runs: Int) {
@@ -231,7 +259,8 @@ fun ScoringScreen(
                     match = activeMatch,
                     info = info,
                     battingTeam = battingTeam,
-                    compact = compact
+                    compact = compact,
+                    glow = glow.value
                 )
 
                 // ---- Players at the crease -----------------------------------
@@ -304,32 +333,32 @@ fun ScoringScreen(
             }
         }
 
-        // Over-complete toast
+        // Banner for overs, milestones and the last batter
         AnimatedVisibility(
-            visible = overToast != null,
+            visible = banner != null,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(top = 56.dp),
-            enter = slideInVertically { -it } + fadeIn(),
-            exit = slideOutVertically { -it } + fadeOut()
+            enter = slideInVertically(spring(dampingRatio = 0.7f, stiffness = 420f)) { -it } + fadeIn(tween(160)),
+            exit = slideOutVertically(tween(220)) { -it } + fadeOut(tween(180))
         ) {
-            val t = overToast
-            if (t != null) {
+            // Keep the last banner on screen while it animates out
+            var shown by remember { mutableStateOf<Banner?>(null) }
+            if (banner != null) shown = banner
+            shown?.let { b ->
                 Row(
                     Modifier
+                        .padding(horizontal = 24.dp)
+                        .shadow(10.dp, RoundedCornerShape(50), ambientColor = Color.Black, spotColor = Color.Black)
                         .clip(RoundedCornerShape(50))
-                        .background(Lsl.Chalk)
+                        .background(b.color)
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.CheckCircle, null, tint = Lsl.FlameInk, modifier = Modifier.size(18.dp))
+                    Icon(b.icon, null, tint = Lsl.Night, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        "End of over ${t.overNumber}: ${t.runs} run${if (t.runs == 1) "" else "s"}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Lsl.Night
-                    )
+                    Text(b.text, style = MaterialTheme.typography.labelLarge, color = Lsl.Night)
                 }
             }
         }
@@ -347,7 +376,8 @@ fun ScoringScreen(
             battingRoster = battingRoster,
             armedExtra = selectedExtra,
             onDismiss = { viewModel.showDismissalDialog.value = false },
-            onConfirm = { dismissed, type, runs, incoming ->
+            bowlingRoster = bowlingRoster,
+            onConfirm = { dismissed, type, runs, incoming, fielder ->
                 viewModel.showDismissalDialog.value = false
                 viewModel.recordBall(
                     runs = runs,
@@ -355,7 +385,8 @@ fun ScoringScreen(
                     isWicket = true,
                     wicketType = type,
                     dismissedPlayer = dismissed,
-                    incomingBatter = incoming
+                    incomingBatter = incoming,
+                    fielder = fielder
                 )
                 selectedExtra = null
             }
@@ -391,6 +422,7 @@ fun ScoringScreen(
         EditBallsSheet(
             balls = ballsList,
             innings = activeMatch.currentInnings,
+            fielders = bowlingRoster,
             onDismiss = { viewModel.showEditScoreDialog.value = false },
             onSave = { idx, ball -> viewModel.editBallAt(idx, ball) }
         )
@@ -448,7 +480,8 @@ private fun Scoreboard(
     match: MatchEntity,
     info: InningsScorecard,
     battingTeam: String,
-    compact: Boolean
+    compact: Boolean,
+    glow: Color
 ) {
     val maxBalls = match.overs * 6
     val progress by animateFloatAsState(
@@ -459,6 +492,7 @@ private fun Scoreboard(
 
     Panel(
         modifier = Modifier.fillMaxWidth(),
+        color = glow.compositeOver(Lsl.Deck),
         shape = RoundedCornerShape(22.dp),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = if (compact) 12.dp else 16.dp)
     ) {
@@ -687,30 +721,46 @@ private fun CreasePanel(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 6.dp, vertical = if (compact) 4.dp else 6.dp)
     ) {
+        val alone = match.currentNonStriker.isBlank()
+        val rowH = if (compact) 38.dp else 44.dp
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                BatterRow(match.currentStriker, info.batsmen[match.currentStriker], true, compact) { onPickBatter(true) }
-                BatterRow(match.currentNonStriker, info.batsmen[match.currentNonStriker], false, compact) { onPickBatter(false) }
+            // Keyed by name, so when strike rotates the two rows slide past each other
+            val atCrease = listOf(match.currentStriker to true, match.currentNonStriker to false)
+            LazyColumn(
+                Modifier.weight(1f).height(rowH * 2),
+                userScrollEnabled = false
+            ) {
+                items(atCrease, key = { (n, striker) -> if (n.isBlank()) "empty-$striker" else n }) { (name, striker) ->
+                    Box(Modifier.animateItem(placementSpec = spring(dampingRatio = 0.75f, stiffness = 380f))) {
+                        if (name.isBlank() && !striker) {
+                            LoneBatterRow(rowH)
+                        } else {
+                            BatterRow(name, info.batsmen[name], striker, compact) { onPickBatter(striker) }
+                        }
+                    }
+                }
             }
             // Swap ends: rotates on press so the change is visible
-            var turns by remember { mutableIntStateOf(0) }
-            val rot by animateFloatAsState(turns * 180f, tween(280, easing = FastOutSlowInEasing), label = "swap-rot")
-            Box(
-                Modifier
-                    .padding(end = 4.dp)
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Lsl.DeckRaised)
-                    .pressable { turns++; onSwap() }
-                    .testTag("swap_strike"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.SwapVert,
-                    contentDescription = "Swap strike",
-                    tint = Lsl.Flame,
-                    modifier = Modifier.graphicsLayer { rotationZ = rot }
-                )
+            AnimatedVisibility(visible = !alone, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+                var turns by remember { mutableIntStateOf(0) }
+                val rot by animateFloatAsState(turns * 180f, tween(280, easing = FastOutSlowInEasing), label = "swap-rot")
+                Box(
+                    Modifier
+                        .padding(end = 4.dp)
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Lsl.DeckRaised)
+                        .pressable { turns++; onSwap() }
+                        .testTag("swap_strike"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.SwapVert,
+                        contentDescription = "Swap strike",
+                        tint = Lsl.Flame,
+                        modifier = Modifier.graphicsLayer { rotationZ = rot }
+                    )
+                }
             }
         }
         HorizontalDivider(color = Lsl.Line, modifier = Modifier.padding(horizontal = 10.dp))
@@ -751,6 +801,18 @@ private fun CreasePanel(
                 modifier = Modifier.padding(start = 34.dp, bottom = 4.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun LoneBatterRow(height: Dp) {
+    Row(
+        Modifier.fillMaxWidth().height(height).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.PersonOutline, null, tint = Lsl.Fade, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Last batter, batting alone", style = MaterialTheme.typography.labelLarge, color = Lsl.Fade)
     }
 }
 
@@ -960,17 +1022,21 @@ private fun WicketSheet(
     match: MatchEntity,
     info: InningsScorecard,
     battingRoster: List<String>,
+    bowlingRoster: List<String>,
     armedExtra: String?,
     onDismiss: () -> Unit,
-    onConfirm: (dismissed: String, type: String, runs: Int, incoming: String?) -> Unit
+    onConfirm: (dismissed: String, type: String, runs: Int, incoming: String?, fielder: String?) -> Unit
 ) {
+    val atCrease = listOf(match.currentStriker, match.currentNonStriker).filter { it.isNotBlank() }
     val remaining = battingRoster.filter { n ->
-        n != match.currentStriker && n != match.currentNonStriker && info.batsmen[n]?.isOut != true
+        n !in atCrease && info.batsmen[n]?.isOut != true
     }
     var dismissed by remember { mutableStateOf(match.currentStriker) }
     var type by remember { mutableStateOf("BOWLED") }
     var runs by remember { mutableIntStateOf(0) }
     var incoming by remember { mutableStateOf(remaining.firstOrNull()) }
+    var fielder by remember { mutableStateOf<String?>(null) }
+    val needsFielder = type in FielderWickets
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -982,7 +1048,8 @@ private fun WicketSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
+                .padding(bottom = 24.dp)
+                .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow)),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text("Wicket", style = MaterialTheme.typography.headlineSmall, color = Lsl.Tape)
@@ -994,23 +1061,54 @@ private fun WicketSheet(
                 )
             }
 
-            SectionTitle("Who's out")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(match.currentStriker, match.currentNonStriker).forEach { n ->
-                    ChoiceChip(
-                        text = n,
-                        selected = dismissed == n,
-                        accent = Lsl.Tape,
-                        onClick = { dismissed = n },
-                        modifier = Modifier.weight(1f)
-                    )
+            if (atCrease.size > 1) {
+                SectionTitle("Who's out")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    atCrease.forEach { n ->
+                        ChoiceChip(
+                            text = n,
+                            selected = dismissed == n,
+                            accent = Lsl.Tape,
+                            onClick = { dismissed = n },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
+            } else {
+                Text("$dismissed is out", style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk)
             }
 
             SectionTitle("How")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 WicketTypes.forEach { (key, label) ->
-                    ChoiceChip(text = label, selected = type == key, onClick = { type = key })
+                    ChoiceChip(text = label, selected = type == key, onClick = { type = key; fielder = null })
+                }
+            }
+
+            // Fielder credit: caught by / run out by / stumped by
+            AnimatedVisibility(
+                visible = needsFielder,
+                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionTitle(
+                        when (type) {
+                            "CAUGHT" -> "Caught by"
+                            "RUN_OUT" -> "Run out by"
+                            else -> "Stumped by"
+                        }
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        bowlingRoster.forEach { f ->
+                            ChoiceChip(
+                                text = if (f == match.currentBowler && type == "CAUGHT") "$f (bowler)" else f,
+                                selected = fielder == f,
+                                onClick = { fielder = if (fielder == f) null else f },
+                                leading = { Monogram(f, size = 22.dp) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -1026,27 +1124,43 @@ private fun WicketSheet(
             }
 
             SectionTitle("Next batter")
-            if (remaining.isEmpty()) {
-                Text(
-                    "No batters left. This wicket ends the innings.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Lsl.Gold
-                )
-            } else {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val survivor = atCrease.firstOrNull { it != dismissed }
+            when {
+                remaining.isNotEmpty() -> FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     remaining.forEach { n ->
                         ChoiceChip(text = n, selected = incoming == n, onClick = { incoming = n })
                     }
                 }
+                survivor != null -> Text(
+                    "No one left to come in. $survivor bats on alone and keeps the strike.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Lsl.Flame
+                )
+                else -> Text(
+                    "Last batter. This wicket ends the innings.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Lsl.Gold
+                )
             }
 
             PrimaryButton(
-                text = "Record wicket",
+                text = if (needsFielder && fielder == null) "Record wicket (no fielder)" else "Record wicket",
                 icon = Icons.Default.Check,
                 color = Lsl.Tape,
                 contentColor = Lsl.Night,
                 modifier = Modifier.fillMaxWidth().testTag("confirm_wicket"),
-                onClick = { onConfirm(dismissed, type, if (type == "RUN_OUT") runs else 0, incoming) }
+                onClick = {
+                    onConfirm(
+                        dismissed,
+                        type,
+                        if (type == "RUN_OUT") runs else 0,
+                        incoming.takeIf { remaining.isNotEmpty() },
+                        fielder.takeIf { needsFielder }
+                    )
+                }
             )
         }
     }
@@ -1129,7 +1243,7 @@ private fun BatterSheet(
                 color = Lsl.Chalk
             )
             Text(
-                "Replaces $current. Picking the batter at the other end swaps them.",
+                if (current.isBlank()) "Send a batter in at this end." else "Replaces $current. Picking the batter at the other end swaps them.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Lsl.Mist
             )
@@ -1176,6 +1290,7 @@ private fun BatterSheet(
 private fun EditBallsSheet(
     balls: List<BallInfo>,
     innings: Int,
+    fielders: List<String>,
     onDismiss: () -> Unit,
     onSave: (Int, BallInfo) -> Unit
 ) {
@@ -1229,6 +1344,7 @@ private fun EditBallsSheet(
         var extra by remember(iv.index) { mutableStateOf(b.extraType) }
         var isWicket by remember(iv.index) { mutableStateOf(b.isWicket) }
         var wType by remember(iv.index) { mutableStateOf(b.wicketType ?: "BOWLED") }
+        var fielder by remember(iv.index) { mutableStateOf(b.fielder) }
 
         AlertDialog(
             onDismissRequest = { editing = null },
@@ -1262,6 +1378,12 @@ private fun EditBallsSheet(
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             WicketTypes.forEach { (k, l) -> ChoiceChip(l, wType == k, { wType = k }, accent = Lsl.Tape) }
                         }
+                        if (wType in FielderWickets) {
+                            SectionTitle("Fielder")
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                fielders.forEach { f -> ChoiceChip(f, fielder == f, { fielder = if (fielder == f) null else f }) }
+                            }
+                        }
                     }
                 }
             },
@@ -1274,7 +1396,8 @@ private fun EditBallsSheet(
                         extraType = extra,
                         isWicket = isWicket,
                         wicketType = if (isWicket) wType else null,
-                        dismissedPlayer = if (isWicket) (b.dismissedPlayer ?: b.striker) else null
+                        dismissedPlayer = if (isWicket) (b.dismissedPlayer ?: b.striker) else null,
+                        fielder = if (isWicket && wType in FielderWickets) fielder else null
                     )
                     onSave(iv.index, edited)
                     editing = null
