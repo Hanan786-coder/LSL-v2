@@ -362,7 +362,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
         // Batting
         item {
             Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
-                TableHeader("Batter", listOf("R", "B", "4s", "6s", "SR"))
+                TableHeader("Batter", listOf("R", "B", "4s", "6s", "SR"), BatCols)
                 if (batted.isEmpty()) {
                     Text("$teamName haven't batted yet.", color = Lsl.Mist, modifier = Modifier.padding(16.dp))
                 }
@@ -372,6 +372,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
                         subtitle = if (b.isOut) dismissalText(b) else "not out",
                         subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Flame,
                         values = listOf("${b.runs}", "${b.ballsFaced}", "${b.fours}", "${b.sixes}", b.strikeRate.fmt(0)),
+                        widths = BatCols,
                         emphasizeFirst = true
                     )
                 }
@@ -398,7 +399,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
         // Bowling
         item {
             Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
-                TableHeader("Bowler", listOf("O", "R", "W", "Econ", "Ext"))
+                TableHeader("Bowler", listOf("O", "R", "W", "Econ", "Ext"), BowlCols)
                 if (card.bowlers.isEmpty()) {
                     Text("No balls bowled yet.", color = Lsl.Mist, modifier = Modifier.padding(16.dp))
                 }
@@ -407,6 +408,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
                         title = b.name,
                         subtitle = null,
                         values = listOf(b.oversString, "${b.runsConceded}", "${b.wickets}", b.economy.fmt(1), "${b.wides + b.noBalls}"),
+                        widths = BowlCols,
                         emphasizeIndex = 2
                     )
                 }
@@ -457,14 +459,15 @@ private fun dismissalText(b: BatsmanLiveStats): String {
     }
 }
 
-private val colW = listOf(34.dp, 30.dp, 28.dp, 28.dp, 40.dp)
+private val BatCols = listOf(34.dp, 32.dp, 30.dp, 30.dp, 42.dp)
+private val BowlCols = listOf(38.dp, 34.dp, 28.dp, 50.dp, 36.dp)
 
 @Composable
-private fun TableHeader(first: String, cols: List<String>) {
+private fun TableHeader(first: String, cols: List<String>, widths: List<androidx.compose.ui.unit.Dp>) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         Text(first, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, modifier = Modifier.weight(1f))
         cols.forEachIndexed { i, c ->
-            Text(c, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(colW[i]))
+            Text(c, style = MaterialTheme.typography.labelMedium, color = Lsl.Mist, textAlign = TextAlign.End, modifier = Modifier.width(widths[i]))
         }
     }
 }
@@ -474,6 +477,7 @@ private fun TableRow(
     title: String,
     subtitle: String?,
     values: List<String>,
+    widths: List<androidx.compose.ui.unit.Dp>,
     subtitleColor: Color = Lsl.Fade,
     emphasizeFirst: Boolean = false,
     emphasizeIndex: Int = if (emphasizeFirst) 0 else -1
@@ -491,7 +495,7 @@ private fun TableRow(
                 fontSize = if (i == emphasizeIndex) 18.sp else 14.sp,
                 color = if (i == emphasizeIndex) Lsl.Chalk else Lsl.Mist,
                 textAlign = TextAlign.End,
-                modifier = Modifier.width(colW[i])
+                modifier = Modifier.width(widths[i])
             )
         }
     }
