@@ -95,7 +95,7 @@ class MatchRepository(private val locoDao: LocoDao) {
 
         // For Team A players
         teamA?.let { team ->
-            val listPlayers = team.playerNames.split(",").map { it.trim() }
+            val listPlayers = team.playerNames.split(",", "\n").map { it.trim() }.filter { it.isNotEmpty() }
             for (pName in listPlayers) {
                 val stats = batsmanStats[pName]
                 val bwl = bowlerStats[pName]
@@ -115,7 +115,7 @@ class MatchRepository(private val locoDao: LocoDao) {
 
         // For Team B players
         teamB?.let { team ->
-            val listPlayers = team.playerNames.split(",").map { it.trim() }
+            val listPlayers = team.playerNames.split(",", "\n").map { it.trim() }.filter { it.isNotEmpty() }
             for (pName in listPlayers) {
                 val stats = batsmanStats[pName]
                 val bwl = bowlerStats[pName]

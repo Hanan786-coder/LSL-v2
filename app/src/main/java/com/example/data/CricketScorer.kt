@@ -9,10 +9,14 @@ data class BatsmanLiveStats(
     val isOut: Boolean = false,
     val outType: String? = null,
     val bowlerName: String? = null,
-    val isStriker: Boolean = false
+    val isStriker: Boolean = false,
+    /** Order in which the batter first appeared at the crease; Int.MAX_VALUE if never batted. */
+    val battingOrder: Int = Int.MAX_VALUE
 ) {
     val strikeRate: Double
         get() = if (ballsFaced > 0) (runs.toDouble() / ballsFaced) * 100.0 else 0.0
+
+    val hasBatted: Boolean get() = battingOrder != Int.MAX_VALUE
 }
 
 data class BowlerLiveStats(
@@ -30,6 +34,18 @@ data class BowlerLiveStats(
         get() = if (ballsBowled > 0) (runsConceded.toDouble() / (ballsBowled.toDouble() / 6.0)) else 0.0
 }
 
+/** One completed (or in-progress) over, used for the over-by-over chart and timeline. */
+data class OverSummary(
+    val index: Int,          // 0-based over number
+    val bowler: String,
+    val runs: Int,
+    val wickets: Int,
+    val labels: List<String>,
+    val isComplete: Boolean
+)
+
+data class Partnership(val runs: Int, val balls: Int)
+
 data class InningsScorecard(
     val totalRuns: Int = 0,
     val totalWickets: Int = 0,
@@ -38,16 +54,47 @@ data class InningsScorecard(
     val extras: Map<String, Int> = mapOf("WD" to 0, "NB" to 0, "BYE" to 0, "LB" to 0),
     val batsmen: Map<String, BatsmanLiveStats> = emptyMap(),
     val bowlers: Map<String, BowlerLiveStats> = emptyMap(),
-    val thisOverBalls: List<String> = emptyList() // list of labels for the current over
+    val thisOverBalls: List<String> = emptyList(),
+    val overs: List<OverSummary> = emptyList(),
+    val partnership: Partnership = Partnership(0, 0)
 ) {
     val totalOversString: String
         get() = "${legalBallsBowled / 6}.${legalBallsBowled % 6}"
-        
+
     val totalExtrasSum: Int
         get() = extras.values.sum()
+
+    /** Legal balls already bowled in the over that is currently in progress (0..5). */
+    val legalBallsInCurrentOver: Int
+        get() = legalBallsBowled % 6
 }
 
+/**
+ * Ball encoding (from version 2 of the scorer):
+ *  - Normal ball:  runs = runs off bat, extraRuns = 0
+ *  - Wide:         runs = 0,  extraRuns = 1 + runs completed
+ *  - No ball:      runs = runs off bat (credited to batter), extraRuns = 1
+ *  - Bye/Leg bye:  runs = 0,  extraRuns = runs completed
+ * Total for the ball is always runs + extraRuns.
+ */
 object CricketScorer {
+
+    fun isLegal(ball: BallInfo): Boolean = ball.extraType != "WIDE" && ball.extraType != "NO_BALL"
+
+    /** Short, scoreboard-style label for a single delivery. */
+    fun ballLabel(ball: BallInfo): String {
+        val total = ball.runs + ball.extraRuns
+        val base = when (ball.extraType) {
+            "WIDE" -> if (total > 1) "${total}wd" else "wd"
+            "NO_BALL" -> if (total > 1) "${total}nb" else "nb"
+            "BYE" -> "${ball.extraRuns}b"
+            "LEG_BYE" -> "${ball.extraRuns}lb"
+            else -> "${ball.runs}"
+        }
+        return if (ball.isWicket) {
+            if (total > 0) "W+$total" else "W"
+        } else base
+    }
 
     fun calculateInningsScorecard(balls: List<BallInfo>, inningsId: Int, playerRoster: List<String>): InningsScorecard {
         var totalRuns = 0
@@ -57,192 +104,128 @@ object CricketScorer {
         var noBalls = 0
         var byes = 0
         var legByes = 0
+        var nextBattingOrder = 0
 
-        val batsmenStats = mutableMapOf<String, BatsmanLiveStats>()
-        val bowlersStats = mutableMapOf<String, BowlerLiveStats>()
-        val thisOverBalls = mutableListOf<String>()
+        val batsmenStats = linkedMapOf<String, BatsmanLiveStats>()
+        val bowlersStats = linkedMapOf<String, BowlerLiveStats>()
 
-        // Initialize players in batsmen stats so we can show them on scorecard even with 0(0)
+        // Seed roster so the scorecard can show "yet to bat" players.
         for (player in playerRoster) {
             batsmenStats[player] = BatsmanLiveStats(name = player)
         }
 
+        fun markAtCrease(name: String) {
+            if (name.isBlank()) return
+            val s = batsmenStats[name] ?: BatsmanLiveStats(name = name)
+            if (!s.hasBatted) batsmenStats[name] = s.copy(battingOrder = nextBattingOrder++)
+        }
+
         val inningsBalls = balls.filter { it.innings == inningsId }
+
+        // Over tracking
+        val overs = mutableListOf<OverSummary>()
+        var overRuns = 0
+        var overWkts = 0
+        var overLabels = mutableListOf<String>()
+        var overBowler = ""
+        var overLegal = 0
+
+        // Partnership tracking
+        var pRuns = 0
+        var pBalls = 0
 
         for (ball in inningsBalls) {
             val batName = ball.striker
             val bowlName = ball.bowler
+            markAtCrease(batName)
+            markAtCrease(ball.nonStriker)
 
-            val bStat = batsmenStats[batName] ?: BatsmanLiveStats(name = batName)
+            val bStat = batsmenStats[batName]!!
             val bowlStat = bowlersStats[bowlName] ?: BowlerLiveStats(name = bowlName)
 
-            // Calculate runs and legal ball status
             val isWide = ball.extraType == "WIDE"
             val isNoBall = ball.extraType == "NO_BALL"
-            val isLegal = !isWide && !isNoBall
+            val legal = !isWide && !isNoBall
+            if (legal) legalBallsBowled++
 
-            if (isLegal) {
-                legalBallsBowled++
+            val ballTotal = ball.runs + ball.extraRuns
+            totalRuns += ballTotal
+
+            when (ball.extraType) {
+                "WIDE" -> wides += ball.extraRuns
+                "NO_BALL" -> noBalls += ball.extraRuns
+                "BYE" -> byes += ball.extraRuns
+                "LEG_BYE" -> legByes += ball.extraRuns
             }
 
-            // Run accrual
-            var ballTotalRuns = ball.runs + ball.extraRuns
-            totalRuns += ballTotalRuns
+            val batRuns = if (ball.extraType == "BYE" || ball.extraType == "LEG_BYE" || isWide) 0 else ball.runs
+            val facedIncrement = if (isWide) 0 else 1
 
-            // Extra breakdown
-            if (ball.isExtra) {
-                when (ball.extraType) {
-                    "WIDE" -> wides += ball.extraRuns
-                    "NO_BALL" -> noBalls += ball.extraRuns
-                    "BYE" -> byes += ball.extraRuns
-                    "LEG_BYE" -> legByes += ball.extraRuns
-                }
-            }
-
-            // Batsman scoring update
-            val batsmanRunsIncrement = if (ball.extraType == "BYE" || ball.extraType == "LEG_BYE") 0 else ball.runs
-            val ballsFacedIncrement = if (isWide) 0 else 1 // wide is not ball faced
-
-            val newFour = if (batsmanRunsIncrement == 4) 1 else 0
-            val newSix = if (batsmanRunsIncrement == 6) 1 else 0
-
-            var batsmanWickets = bStat.isOut
-            var batsmanOutType = bStat.outType
-            var batsmanBowlerName = bStat.bowlerName
+            var striker = bStat.copy(
+                runs = bStat.runs + batRuns,
+                ballsFaced = bStat.ballsFaced + facedIncrement,
+                fours = bStat.fours + if (batRuns == 4) 1 else 0,
+                sixes = bStat.sixes + if (batRuns == 6) 1 else 0
+            )
 
             if (ball.isWicket) {
-                // If the player is the striker or the dismissedPlayer matches striker
                 val outPlayer = ball.dismissedPlayer ?: batName
+                val outType = ball.wicketType ?: "OUT"
                 if (outPlayer == batName) {
-                    batsmanWickets = true
-                    batsmanOutType = ball.wicketType ?: "OUT"
-                    batsmanBowlerName = bowlName
+                    striker = striker.copy(isOut = true, outType = outType, bowlerName = bowlName)
                 } else {
-                    // Could be runout for non-striker
-                    val nonStrStat = batsmenStats[outPlayer] ?: BatsmanLiveStats(name = outPlayer)
-                    batsmenStats[outPlayer] = nonStrStat.copy(
-                        isOut = true,
-                        outType = "RUN OUT",
-                        bowlerName = bowlName
-                    )
+                    val other = batsmenStats[outPlayer] ?: BatsmanLiveStats(name = outPlayer)
+                    batsmenStats[outPlayer] = other.copy(isOut = true, outType = outType, bowlerName = bowlName)
                 }
                 totalWickets++
             }
+            batsmenStats[batName] = striker
 
-            batsmenStats[batName] = bStat.copy(
-                runs = bStat.runs + batsmanRunsIncrement,
-                ballsFaced = bStat.ballsFaced + ballsFacedIncrement,
-                fours = bStat.fours + newFour,
-                sixes = bStat.sixes + newSix,
-                isOut = batsmanWickets,
-                outType = batsmanOutType,
-                bowlerName = batsmanBowlerName
-            )
-
-            // Bowler scoring update
-            // bowler runs conceded: batsman runs + wides/noballs extras
-            val bowlerRunsIncrement = ball.runs + (if (isWide || isNoBall) ball.extraRuns else 0)
-            val bowlerWicketIncrement = if (ball.isWicket && ball.wicketType != "RUN_OUT") 1 else 0
-
+            val bowlerRuns = ball.runs + (if (isWide || isNoBall) ball.extraRuns else 0)
+            val creditsBowler = ball.isWicket && ball.wicketType != "RUN_OUT" && ball.wicketType != "RETIRED"
             bowlersStats[bowlName] = bowlStat.copy(
-                ballsBowled = bowlStat.ballsBowled + (if (isLegal) 1 else 0),
-                runsConceded = bowlStat.runsConceded + bowlerRunsIncrement,
-                wickets = bowlStat.wickets + bowlerWicketIncrement,
-                wides = bowlStat.wides + (if (isWide) 1 else 0),
-                noBalls = bowlStat.noBalls + (if (isNoBall) 1 else 0)
+                ballsBowled = bowlStat.ballsBowled + if (legal) 1 else 0,
+                runsConceded = bowlStat.runsConceded + bowlerRuns,
+                wickets = bowlStat.wickets + if (creditsBowler) 1 else 0,
+                wides = bowlStat.wides + if (isWide) 1 else 0,
+                noBalls = bowlStat.noBalls + if (isNoBall) 1 else 0
             )
 
-            // Format ball log for over visual feed
-            val ballLabel = when {
-                ball.isWicket -> "W"
-                isWide -> "${ball.runs + ball.extraRuns}wd"
-                isNoBall -> "${ball.runs + ball.extraRuns}nb"
-                ball.runs == 0 -> "0"
-                else -> "${ball.runs}"
+            // Partnership
+            pRuns += ballTotal
+            if (legal) pBalls++
+            if (ball.isWicket) { pRuns = 0; pBalls = 0 }
+
+            // Over grouping
+            if (overLabels.isEmpty()) overBowler = bowlName
+            overLabels.add(ballLabel(ball))
+            overRuns += ballTotal
+            if (ball.isWicket) overWkts++
+            if (legal) overLegal++
+            if (overLegal == 6) {
+                overs.add(OverSummary(overs.size, overBowler, overRuns, overWkts, overLabels, true))
+                overRuns = 0; overWkts = 0; overLegal = 0; overLabels = mutableListOf()
             }
-            thisOverBalls.add(ballLabel)
         }
 
-        // Keep only last over's deliveries for standard view (or last 6 balls)
-        val overLength = if (legalBallsBowled > 0) legalBallsBowled % 6 else 0
-        // We can group balls in the current active over:
-        // A legal ball index starts fresh on every (legalBalls / 6) over boundary
-        val lastOverBalls = mutableListOf<String>()
-        var legalInCurrent = 0
-        for (i in billingOverSequences(inningsBalls)) {
-            lastOverBalls.add(i)
+        if (overLabels.isNotEmpty()) {
+            overs.add(OverSummary(overs.size, overBowler, overRuns, overWkts, overLabels, false))
         }
 
-        val runRate = if (legalBallsBowled > 0) (totalRuns.toDouble() / (legalBallsBowled.toDouble() / 6.0)) else 0.0
-
-        val extraMap = mapOf(
-            "WD" to wides,
-            "NB" to noBalls,
-            "BYE" to byes,
-            "LB" to legByes
-        )
+        val runRate = if (legalBallsBowled > 0) totalRuns / (legalBallsBowled / 6.0) else 0.0
 
         return InningsScorecard(
             totalRuns = totalRuns,
             totalWickets = totalWickets,
             legalBallsBowled = legalBallsBowled,
             runRate = runRate,
-            extras = extraMap,
+            extras = mapOf("WD" to wides, "NB" to noBalls, "BYE" to byes, "LB" to legByes),
             batsmen = batsmenStats,
             bowlers = bowlersStats,
-            thisOverBalls = lastOverBalls.takeLast(12) // show last 12 events for clean over flow
+            // Balls of the over in progress (empty right after an over completes)
+            thisOverBalls = overs.lastOrNull()?.takeIf { !it.isComplete }?.labels ?: emptyList(),
+            overs = overs,
+            partnership = Partnership(pRuns, pBalls)
         )
-    }
-
-    private fun billingOverSequences(balls: List<BallInfo>): List<String> {
-        val list = mutableListOf<String>()
-        var legalCount = 0
-        for (ball in balls) {
-            val isWide = ball.extraType == "WIDE"
-            val isNoBall = ball.extraType == "NO_BALL"
-            val label = when {
-                ball.isWicket -> "W"
-                isWide -> "wd"
-                isNoBall -> "nb"
-                else -> "${ball.runs}"
-            }
-            
-            val suffix = if (isWide || isNoBall) "" else ""
-            list.add(label + suffix)
-
-            if (!isWide && !isNoBall) {
-                legalCount++
-            }
-        }
-        
-        // Return only elements of the current over (elements since the last completed over)
-        val completedOvers = legalCount / 6
-        val ballsBeforeCurrentOver = completedOvers * 6
-        
-        // Find indices of legal balls to filter
-        var tempLegalCount = 0
-        val overBalls = mutableListOf<String>()
-        for (ball in balls) {
-            val isWide = ball.extraType == "WIDE"
-            val isNoBall = ball.extraType == "NO_BALL"
-            
-            val label = when {
-                ball.isWicket -> if (ball.wicketType == "RUN_OUT") "W-RO" else "W"
-                isWide -> if (ball.runs > 0) "${ball.runs + 1}wd" else "wd"
-                isNoBall -> if (ball.runs > 0) "${ball.runs + 1}nb" else "nb"
-                ball.extraType == "BYE" -> "${ball.extraRuns}B"
-                ball.extraType == "LEG_BYE" -> "${ball.extraRuns}LB"
-                else -> "${ball.runs}"
-            }
-            
-            if (tempLegalCount >= ballsBeforeCurrentOver) {
-                overBalls.add(label)
-            }
-            
-            if (!isWide && !isNoBall) {
-                tempLegalCount++
-            }
-        }
-        return overBalls
     }
 }
