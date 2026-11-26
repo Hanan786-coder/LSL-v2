@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
                             )
                             "scorecard" -> ScorecardScreen(viewModel = viewModel, onBackClick = { viewModel.goBack() })
                             "teams" -> TeamsManageScreen(viewModel = viewModel, onBack = { viewModel.goBack() })
+                            "players" -> PlayersScreen(viewModel = viewModel, onBack = { viewModel.goBack() })
                             "tournaments" -> TournamentScreen(viewModel = viewModel, onBack = { viewModel.goBack() })
                             "leaderboard" -> LeaderboardScreen(viewModel = viewModel, onBack = { viewModel.goBack() })
                             "history" -> HistoryScreen(viewModel = viewModel, onBack = { viewModel.goBack() })

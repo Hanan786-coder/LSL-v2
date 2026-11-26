@@ -296,7 +296,7 @@ private fun TournamentDetail(
                                 .clip(RoundedCornerShape(14.dp))
                                 .background(if (inThis) Lsl.Flame.copy(alpha = 0.14f) else Lsl.DeckRaised)
                                 .pressable {
-                                    viewModel.updateTeam(team, team.name, team.playerNames.toPlayerList(), if (inThis) null else tournament.id)
+                                    viewModel.setTeamTournament(team, if (inThis) null else tournament.id)
                                 }
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically

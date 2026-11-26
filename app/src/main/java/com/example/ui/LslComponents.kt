@@ -483,3 +483,87 @@ fun CountUpText(
     }
     Text(format(anim.value.toInt()), style = style, color = color, modifier = modifier, maxLines = 1)
 }
+
+// ---------------------------------------------------------------------------
+// Roles: a short tinted tag per role, and a gold "C" for the captain
+// ---------------------------------------------------------------------------
+
+fun roleColor(role: com.example.data.PlayerRole): Color = when (role) {
+    com.example.data.PlayerRole.BATTER -> Lsl.Flame
+    com.example.data.PlayerRole.BOWLER -> Lsl.Sky
+    com.example.data.PlayerRole.ALL_ROUNDER -> Color(0xFFC8A6FF)
+    com.example.data.PlayerRole.KEEPER -> Color(0xFF7EE08A)
+    com.example.data.PlayerRole.UNSET -> Lsl.Fade
+}
+
+@Composable
+fun RoleBadge(role: com.example.data.PlayerRole, modifier: Modifier = Modifier, long: Boolean = false) {
+    if (role == com.example.data.PlayerRole.UNSET) return
+    val c = roleColor(role)
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(c.copy(alpha = 0.16f))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            if (long) role.label else role.short,
+            color = c,
+            fontFamily = Scoreboard,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun CaptainMark(modifier: Modifier = Modifier, size: Dp = 18.dp) {
+    Box(
+        modifier.size(size).clip(CircleShape).background(Lsl.Gold),
+        contentAlignment = Alignment.Center
+    ) {
+        val fs = (size.value * 0.62f).sp
+        Text(
+            "C",
+            color = Lsl.Night,
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = Scoreboard,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = fs,
+                lineHeight = fs,
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                )
+            )
+        )
+    }
+}
+
+/** Looks up a player's role and captaincy in the match on screen (null when unknown). */
+val LocalSquadLookup = androidx.compose.runtime.staticCompositionLocalOf<(String) -> LocoViewModel.SquadSpot?> { { null } }
+
+/** Provides [LocalSquadLookup] for both teams of [match]. */
+@Composable
+fun ProvideSquads(viewModel: LocoViewModel, match: com.example.data.MatchEntity?, content: @Composable () -> Unit) {
+    val members by viewModel.members.collectAsState()
+    val players by viewModel.players.collectAsState()
+    val teams by viewModel.teams.collectAsState()
+    val lookup = remember(match?.teamAId, match?.teamBId, members, players, teams) {
+        val all = if (match == null) emptyList() else
+            viewModel.squadOf(match.teamAId, members, players) + viewModel.squadOf(match.teamBId, members, players)
+        val byName = all.associateBy { it.name.lowercase() }
+        val fn: (String) -> LocoViewModel.SquadSpot? = { n -> byName[n.trim().lowercase()] }
+        fn
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalSquadLookup provides lookup, content = content)
+}
+
+/** Name with cricket's usual marks: "(c)" for captain, "(wk)" for keeper. */
+fun decoratedName(name: String, spot: LocoViewModel.SquadSpot?): String = buildString {
+    append(name)
+    if (spot?.captain == true) append(" (c)")
+    if (spot?.role == com.example.data.PlayerRole.KEEPER) append(" (wk)")
+}

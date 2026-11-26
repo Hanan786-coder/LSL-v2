@@ -100,28 +100,51 @@ class LocoViewModel(private val repository: MatchRepository) : ViewModel() {
     val showEditScoreDialog = MutableStateFlow(false)
 
     // --- Team & Tournament Management ---
-    fun createTeam(name: String, players: List<String>, tournamentId: Int? = null) {
+    // --- Saved players, squads, roles ---
+    val players: StateFlow<List<PlayerEntity>> = repository.allPlayers
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val members: StateFlow<List<TeamMemberEntity>> = repository.allMembers
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** One player's place in a squad. */
+    data class SquadSpot(val name: String, val role: PlayerRole, val captain: Boolean)
+
+    /** A team's squad in batting order, with roles. Teams saved before roles existed fall back to names only. */
+    fun squadOf(teamId: Int, allMembers: List<TeamMemberEntity> = members.value, allPlayers: List<PlayerEntity> = players.value): List<SquadSpot> {
+        val byId = allPlayers.associateBy { it.id }
+        val mine = allMembers.filter { it.teamId == teamId }.sortedBy { it.position }
+        if (mine.isNotEmpty()) {
+            return mine.mapNotNull { m ->
+                byId[m.playerId]?.let { SquadSpot(it.name, PlayerRole.of(m.role), m.isCaptain) }
+            }
+        }
+        return rosterFor(teamId).map { SquadSpot(it, PlayerRole.UNSET, false) }
+    }
+
+    fun spotOf(teamId: Int, name: String): SquadSpot? =
+        squadOf(teamId).firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    fun saveTeam(existing: TeamEntity?, name: String, squad: List<SquadSpot>, tournamentId: Int?) {
         viewModelScope.launch {
-            repository.insertTeam(
-                TeamEntity(
-                    name = name.trim(),
-                    playerNames = players.map { it.trim() }.filter { it.isNotBlank() }.distinct().joinToString(", "),
-                    tournamentId = tournamentId
-                )
-            )
+            val base = existing?.copy(name = name.trim(), tournamentId = tournamentId)
+                ?: TeamEntity(name = name.trim(), playerNames = "", tournamentId = tournamentId)
+            repository.saveTeam(base, squad.map { MatchRepository.MemberDraft(it.name, it.role, it.captain) })
         }
     }
 
-    fun updateTeam(team: TeamEntity, name: String, players: List<String>, tournamentId: Int?) {
-        viewModelScope.launch {
-            repository.insertTeam(
-                team.copy(
-                    name = name.trim(),
-                    playerNames = players.map { it.trim() }.filter { it.isNotBlank() }.distinct().joinToString(", "),
-                    tournamentId = tournamentId
-                )
-            )
-        }
+    fun setTeamTournament(team: TeamEntity, tournamentId: Int?) {
+        viewModelScope.launch { repository.insertTeam(team.copy(tournamentId = tournamentId)) }
+    }
+
+    fun addPlayer(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch { repository.ensurePlayer(name) }
+    }
+
+    /** Deletes a saved player who is in no team; reports back whether it happened. */
+    fun deletePlayer(player: PlayerEntity, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch { onResult(repository.deletePlayer(player)) }
     }
 
     fun deleteTeam(team: TeamEntity) {

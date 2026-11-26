@@ -51,6 +51,7 @@ fun DashboardScreen(
     val teams by viewModel.teams.collectAsState()
     val tournaments by viewModel.tournaments.collectAsState()
     val players by viewModel.playerStats.collectAsState()
+    val saved by viewModel.players.collectAsState()
 
     val ongoing = matches.filter { it.status == "ONGOING" }
     val completed = matches.filter { it.status == "COMPLETED" }
@@ -110,6 +111,8 @@ fun DashboardScreen(
         item {
             Panel(contentPadding = PaddingValues(vertical = 4.dp)) {
                 NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Flame, onManageTeamsClick, Modifier.testTag("nav_teams"))
+                NavDivider()
+                NavRow(Icons.Default.Person, "Players", countLabel(saved.size, "saved player"), roleColor(com.example.data.PlayerRole.KEEPER), { viewModel.navigateTo("players") }, Modifier.testTag("nav_players"))
                 NavDivider()
                 NavRow(Icons.Default.EmojiEvents, "Tournaments", countLabel(tournaments.size, "league"), Lsl.Gold, onTournamentsClick, Modifier.testTag("nav_tournaments"))
                 NavDivider()
