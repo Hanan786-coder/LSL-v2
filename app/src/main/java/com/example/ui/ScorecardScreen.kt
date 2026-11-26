@@ -3,31 +3,42 @@ package com.example.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.*
+import com.example.ui.theme.Lsl
+import com.example.ui.theme.Scoreboard
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScorecardScreen(
     viewModel: LocoViewModel,
@@ -35,558 +46,492 @@ fun ScorecardScreen(
 ) {
     val context = LocalContext.current
     val match by viewModel.activeMatch.collectAsState()
+    val teams by viewModel.teams.collectAsState()
+    val m = match
 
-    if (match == null) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xFF0F172A)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("No match selected.", color = Color.White)
+    if (m == null) {
+        LslScreen(title = "Scorecard", onBack = onBackClick) { inner ->
+            EmptyState(
+                Icons.Default.Leaderboard,
+                "This match was removed",
+                "Open another match from history.",
+                Modifier.padding(inner)
+            )
         }
         return
     }
 
-    val activeMatch = match!!
-    val battingRoster = viewModel.getBattingTeamPlayers()
-    val bowlingRoster = viewModel.getBowlingTeamPlayers()
+    val firstId = viewModel.battingTeamId(m, 1)
+    val secondId = viewModel.battingTeamId(m, 2)
+    val firstName = viewModel.teamName(m, firstId)
+    val secondName = viewModel.teamName(m, secondId)
+    val balls = remember(m.ballsJson) { JsonHelper.listFromJson(m.ballsJson, BallInfo::class.java) }
+    val first = remember(balls, teams) { CricketScorer.calculateInningsScorecard(balls, 1, viewModel.rosterFor(firstId)) }
+    val second = remember(balls, teams) { CricketScorer.calculateInningsScorecard(balls, 2, viewModel.rosterFor(secondId)) }
 
-    val ballsList = remember(activeMatch.ballsJson) {
-        JsonHelper.listFromJson(activeMatch.ballsJson, BallInfo::class.java)
-    }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
 
-    // Process both innings
-    val firstInningsCard = remember(ballsList) {
-        CricketScorer.calculateInningsScorecard(ballsList, 1, bowlingRoster)
-    }
-    val secondInningsCard = remember(ballsList) {
-        CricketScorer.calculateInningsScorecard(ballsList, 2, battingRoster)
-    }
-
-    var selectedTab by remember { mutableStateOf(0) } // 0 = Summary, 1 = Innings 1, 2 = Innings 2
-    var showShareModal by remember { mutableStateOf(false) }
-
-    val formattedDate = remember(activeMatch.date) {
-        SimpleDateFormat("EEEE, dd MMMM yyyy, h:mm a", Locale.getDefault()).format(Date(activeMatch.date))
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Match Center Scorecard", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showShareModal = true }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share Scorecard", tint = Color(0xFF10B981))
-                    }
-                    IconButton(onClick = {
-                        val summaryText = generateMatchSummaryText(activeMatch, firstInningsCard, secondInningsCard)
-                        copyToClipboard(context, "Loco Match Summary", summaryText)
-                    }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy Summary", tint = Color(0xFF38BDF8))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E293B))
+    LslScreen(
+        title = "$firstName v $secondName",
+        subtitle = if (m.status == "ONGOING") "Live, ${m.overs} overs" else "${m.overs} overs, ${SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(m.date))}",
+        onBack = onBackClick,
+        actions = {
+            IconButton(onClick = {
+                val text = summaryText(m, firstName, secondName, first, second)
+                copyToClipboard(context, text)
+            }) { Icon(Icons.Default.ContentCopy, "Copy summary", tint = Lsl.Moss) }
+            IconButton(onClick = { shareText(context, summaryText(m, firstName, secondName, first, second)) }) {
+                Icon(Icons.Default.Share, "Share summary", tint = Lsl.Mint)
+            }
+        }
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            SegmentedTabs(
+                labels = listOf("Summary", firstName, secondName),
+                selected = tab,
+                onSelect = { tab = it }
             )
-        },
-        containerColor = Color(0xFF0F172A)
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Tab Header Bar
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = Color(0xFF1E293B),
-                contentColor = Color(0xFF10B981)
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text("SUMMARY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (selectedTab == 0) Color(0xFF10B981) else Color(0xFF94A3B8)) }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text(activeMatch.teamAName.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (selectedTab == 1) Color(0xFF10B981) else Color(0xFF94A3B8)) }
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = { Text(activeMatch.teamBName.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (selectedTab == 2) Color(0xFF10B981) else Color(0xFF94A3B8)) }
-                )
-            }
-
-            // Tabs Content
-            when (selectedTab) {
-                0 -> SummaryTabContent(
-                    match = activeMatch,
-                    firstCard = firstInningsCard,
-                    secondCard = secondInningsCard,
-                    formattedDate = formattedDate,
-                    onShareClick = { showShareModal = true }
-                )
-                1 -> InningsTabContent(
-                    teamName = activeMatch.teamAName,
-                    card = firstInningsCard
-                )
-                2 -> InningsTabContent(
-                    teamName = activeMatch.teamBName,
-                    card = secondInningsCard
-                )
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val dir = if (targetState > initialState) 1 else -1
+                    (slideInHorizontally(tween(260)) { it / 6 * dir } + fadeIn(tween(200)))
+                        .togetherWith(slideOutHorizontally(tween(200)) { -it / 6 * dir } + fadeOut(tween(140)))
+                },
+                label = "card-tab",
+                modifier = Modifier.fillMaxSize()
+            ) { t ->
+                when (t) {
+                    0 -> SummaryTab(m, firstName, secondName, first, second) { shareText(context, summaryText(m, firstName, secondName, first, second)) }
+                    1 -> InningsTab(firstName, first)
+                    else -> InningsTab(secondName, second)
+                }
             }
         }
-    }
-
-    // Share Scorecard Simulated Modal Panel
-    if (showShareModal) {
-        AlertDialog(
-            onDismissRequest = { showShareModal = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF10B981))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text("Share / Export Scorecard", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            },
-            containerColor = Color(0xFF1E293B),
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Generate a graphical summary cards below to copy and share on WhatsApp, Facebook or local colony groups:", color = Color(0xFF94A3B8), fontSize = 13.sp)
-
-                    // A beautiful simulated graphic
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("🏏 LOCO STREET LEAGUE", fontWeight = FontWeight.ExtraBold, color = Color(0xFF10B981), fontSize = 12.sp)
-                            Text("GULLY MATCH SCORECARD", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 11.sp, letterSpacing = 1.sp)
-                            
-                            Spacer(modifier = Modifier.height(10.dp))
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(activeMatch.teamAName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("${firstInningsCard.totalRuns}/${firstInningsCard.totalWickets}", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                                    Text("(${firstInningsCard.totalOversString} Ov)", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                                }
-                                Text("VS", color = Color(0xFFEF4444), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(activeMatch.teamBName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("${secondInningsCard.totalRuns}/${secondInningsCard.totalWickets}", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                                    Text("(${secondInningsCard.totalOversString} Ov)", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = Color(0xFF334155))
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                "Result: ${activeMatch.resultText.ifEmpty { "In Progress..." }}",
-                                color = Color(0xFFF59E0B),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                val text = generateMatchSummaryText(activeMatch, firstInningsCard, secondInningsCard)
-                                copyToClipboard(context, "Match Summary", text)
-                                showShareModal = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy Summary Text", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = {
-                                Toast.makeText(context, "Scorecard image generated and saved to gallery!", Toast.LENGTH_LONG).show()
-                                showShareModal = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Save as Image", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            },
-            confirmButton = {}
-        )
     }
 }
 
 @Composable
-fun SummaryTabContent(
-    match: MatchEntity,
-    firstCard: InningsScorecard,
-    secondCard: InningsScorecard,
-    formattedDate: String,
-    onShareClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+fun SegmentedTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(
+        Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Lsl.Turf)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Main Result Banner Card
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-            border = BorderStroke(1.dp, Color(0xFF334155))
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+        labels.forEachIndexed { i, l ->
+            val bg by animateColorAsState(if (i == selected) Lsl.TurfRaised else Color.Transparent, tween(180), label = "seg")
+            val fg by animateColorAsState(if (i == selected) Lsl.Chalk else Lsl.Moss, tween(180), label = "seg-fg")
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(bg)
+                    .pressable(pressedScale = 0.97f) { onSelect(i) },
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    match.resultText.ifEmpty { "MATCH IS ONGOING" },
-                    color = Color(0xFFF59E0B),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                if (match.topPerformer.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        "🔥 Match MVP: ${match.topPerformer}",
-                        color = Color(0xFF10B981),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = Color(0xFF334155))
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    formattedDate,
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        // Versus Comparison Box
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-            border = BorderStroke(1.dp, Color(0xFF334155))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "MATCH SCORE SUMMARY",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8),
-                    fontSize = 11.sp,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Team A scores row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(match.teamAName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            "${firstCard.totalRuns}/${firstCard.totalWickets}",
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp
-                        )
-                        Text(
-                            " (${firstCard.totalOversString} ov)",
-                            color = Color(0xFF94A3B8),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Team B scores row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(match.teamBName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            "${secondCard.totalRuns}/${secondCard.totalWickets}",
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 22.sp
-                        )
-                        Text(
-                            " (${secondCard.totalOversString} ov)",
-                            color = Color(0xFF94A3B8),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        // Quick Sharing Card Promo
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF0F172A).copy(alpha = 0.5f))
-                .clickable { onShareClick() }
-                .border(1.dp, Color(0xFF475569), RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF10B981).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF10B981))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Share scorecard to friends", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("Generate dynamic image summary for WhatsApp & gully groups", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                }
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.White)
+                Text(l, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
             }
         }
     }
 }
 
+// ---------------------------------------------------------------------------
+// Summary
+// ---------------------------------------------------------------------------
+
 @Composable
-fun InningsTabContent(
-    teamName: String,
-    card: InningsScorecard
+private fun SummaryTab(
+    match: MatchEntity,
+    firstName: String,
+    secondName: String,
+    first: InningsScorecard,
+    second: InningsScorecard,
+    onShare: () -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().navigationBarsPadding()
+    ) {
+        item { ResultBanner(match) }
+
+        item {
+            Panel {
+                InningsLine(firstName, first, match.winnerTeamId == match.battingFirstTeamId && match.status == "COMPLETED")
+                Spacer(Modifier.height(10.dp))
+                val secondWon = match.status == "COMPLETED" && match.winnerTeamId != null && match.winnerTeamId != match.battingFirstTeamId
+                InningsLine(secondName, second, secondWon)
+            }
+        }
+
+        if (first.overs.isNotEmpty()) {
+            item {
+                Panel {
+                    SectionTitle("Runs per over")
+                    Spacer(Modifier.height(10.dp))
+                    ManhattanChart(first.overs, second.overs, match.overs)
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LegendDot(Lsl.Mint); Text(" $firstName", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1)
+                        Spacer(Modifier.width(14.dp))
+                        LegendDot(Lsl.Sun); Text(" $secondName", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1)
+                        Spacer(Modifier.width(14.dp))
+                        LegendDot(Lsl.Tape); Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+                    }
+                }
+            }
+        }
+
+        item {
+            Panel {
+                SectionTitle("Top performers")
+                Spacer(Modifier.height(8.dp))
+                val bats = (first.batsmen.values + second.batsmen.values).filter { it.hasBatted }.sortedByDescending { it.runs }.take(3)
+                val bowls = (first.bowlers.values + second.bowlers.values)
+                    .sortedWith(compareByDescending<BowlerLiveStats> { it.wickets }.thenBy { it.runsConceded }).take(3)
+                if (bats.isEmpty() && bowls.isEmpty()) {
+                    Text("Nothing bowled yet.", color = Lsl.Moss, style = MaterialTheme.typography.bodyMedium)
+                }
+                bats.forEach { b ->
+                    PerformerRow(b.name, "${b.runs}", "(${b.ballsFaced})${if (!b.isOut) " not out" else ""}", Icons.Default.SportsCricket)
+                }
+                if (bats.isNotEmpty() && bowls.isNotEmpty()) HorizontalDivider(color = Lsl.Line, modifier = Modifier.padding(vertical = 6.dp))
+                bowls.forEach { b ->
+                    PerformerRow(b.name, "${b.wickets}/${b.runsConceded}", "(${b.oversString} ov)", Icons.Default.SportsBaseball)
+                }
+            }
+        }
+
+        item {
+            QuietButton(
+                text = "Share with the group",
+                icon = Icons.Default.Share,
+                tint = Lsl.Mint,
+                height = 52.dp,
+                onClick = onShare,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegendDot(c: Color) = Box(Modifier.size(8.dp).clip(CircleShape).background(c))
+
+@Composable
+private fun ResultBanner(match: MatchEntity) {
+    val done = match.status == "COMPLETED"
+    val pop = remember { Animatable(if (done) 0.6f else 1f) }
+    LaunchedEffect(done) { if (done) pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 300f)) }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(if (done) Lsl.Sun.copy(alpha = 0.14f) else Lsl.Turf)
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            if (done) Icons.Default.EmojiEvents else Icons.Default.SportsCricket,
+            contentDescription = null,
+            tint = if (done) Lsl.Sun else Lsl.Mint,
+            modifier = Modifier.size(40.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (done) match.resultText else "Match in progress",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Lsl.Chalk,
+            textAlign = TextAlign.Center
+        )
+        if (match.topPerformer.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.bodyMedium, color = Lsl.Moss, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun InningsLine(name: String, card: InningsScorecard, won: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Monogram(name, size = 34.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.titleMedium, color = if (won) Lsl.Chalk else Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("RR ${card.runRate.fmt()}  Extras ${card.totalExtrasSum}", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade)
+        }
+        Text(
+            "${card.totalRuns}/${card.totalWickets}",
+            fontFamily = Scoreboard,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 30.sp,
+            color = if (won) Lsl.Chalk else Lsl.Moss
+        )
+        Text(" (${card.totalOversString})", style = MaterialTheme.typography.labelMedium, color = Lsl.Fade)
+    }
+}
+
+@Composable
+private fun PerformerRow(name: String, figure: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = Lsl.Fade, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(figure, fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Lsl.Chalk)
+        Text(" $detail", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+    }
+}
+
+/** Runs-per-over bars for both innings, growing in once when shown. */
+@Composable
+fun ManhattanChart(first: List<OverSummary>, second: List<OverSummary>, totalOvers: Int) {
+    val grow = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { grow.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
+    val n = maxOf(totalOvers, first.size, second.size).coerceAtLeast(1)
+    val maxRuns = (first + second).maxOfOrNull { it.runs }?.coerceAtLeast(6) ?: 6
+
+    Column {
+        Canvas(Modifier.fillMaxWidth().height(140.dp)) {
+            val slot = size.width / n
+            val barW = (slot * 0.36f).coerceAtMost(18.dp.toPx())
+            val r = CornerRadius(3.dp.toPx())
+            // Baseline grid every 6 runs
+            var g = 6
+            while (g <= maxRuns) {
+                val y = size.height - size.height * g / maxRuns
+                drawLine(Lsl.Line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
+                g += 6
+            }
+            fun drawSet(list: List<OverSummary>, color: Color, offset: Float) {
+                list.forEach { o ->
+                    val h = size.height * o.runs / maxRuns * grow.value
+                    val x = o.index * slot + slot / 2 + offset
+                    drawRoundRect(color, Offset(x - barW / 2, size.height - h), Size(barW, h), r)
+                    repeat(o.wickets) { w ->
+                        drawCircle(Lsl.Tape, radius = 3.dp.toPx(), center = Offset(x, size.height - h - (6 + w * 8).dp.toPx() * grow.value))
+                    }
+                }
+            }
+            drawSet(first, Lsl.Mint, -barW * 0.55f)
+            drawSet(second, Lsl.Sun, barW * 0.55f)
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(Modifier.fillMaxWidth()) {
+            val step = when { n <= 6 -> 1; n <= 12 -> 2; else -> 5 }
+            for (i in 1..n) {
+                Text(
+                    if (i == 1 || i % step == 0) "$i" else "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Lsl.Fade,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Innings detail
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun InningsTab(teamName: String, card: InningsScorecard) {
+    val batted = card.batsmen.values.filter { it.hasBatted }.sortedBy { it.battingOrder }
+    val yetToBat = card.batsmen.values.filter { !it.hasBatted }
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().navigationBarsPadding()
     ) {
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = BorderStroke(1.dp, Color(0xFF334155))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("TOTAL INNINGS RUNS", color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("${card.totalRuns}/${card.totalWickets}", fontFamily = Scoreboard, fontWeight = FontWeight.ExtraBold, fontSize = 44.sp, color = Lsl.Chalk)
+                Text("  ${card.totalOversString} overs", style = MaterialTheme.typography.titleSmall, color = Lsl.Moss, modifier = Modifier.padding(bottom = 8.dp))
+                Spacer(Modifier.weight(1f))
+                Text("RR ${card.runRate.fmt()}", style = MaterialTheme.typography.labelLarge, color = Lsl.Moss, modifier = Modifier.padding(bottom = 8.dp))
+            }
+        }
+
+        // Batting
+        item {
+            Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
+                TableHeader("Batter", listOf("R", "B", "4s", "6s", "SR"))
+                if (batted.isEmpty()) {
+                    Text("$teamName haven't batted yet.", color = Lsl.Moss, modifier = Modifier.padding(16.dp))
+                }
+                batted.forEach { b ->
+                    TableRow(
+                        title = b.name,
+                        subtitle = if (b.isOut) dismissalText(b) else "not out",
+                        subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Mint,
+                        values = listOf("${b.runs}", "${b.ballsFaced}", "${b.fours}", "${b.sixes}", b.strikeRate.fmt(0)),
+                        emphasizeFirst = true
+                    )
+                }
+                HorizontalDivider(color = Lsl.Line, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    Text("Extras", style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, modifier = Modifier.weight(1f))
                     Text(
-                        "${card.totalRuns}-${card.totalWickets} (${card.totalOversString} Overs)",
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp
+                        "${card.totalExtrasSum}  (wd ${card.extras["WD"]}, nb ${card.extras["NB"]}, b ${card.extras["BYE"]}, lb ${card.extras["LB"]})",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Lsl.Moss
+                    )
+                }
+                if (yetToBat.isNotEmpty()) {
+                    Text(
+                        "Yet to bat: ${yetToBat.joinToString(", ") { it.name }}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Lsl.Fade,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
             }
         }
 
-        // Batsman scorecard section
+        // Bowling
         item {
-            Text("BATTING HIGHLIGHTS", color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Panel(contentPadding = PaddingValues(vertical = 8.dp)) {
+                TableHeader("Bowler", listOf("O", "R", "W", "Econ", "Ext"))
+                if (card.bowlers.isEmpty()) {
+                    Text("No balls bowled yet.", color = Lsl.Moss, modifier = Modifier.padding(16.dp))
+                }
+                card.bowlers.values.forEach { b ->
+                    TableRow(
+                        title = b.name,
+                        subtitle = null,
+                        values = listOf(b.oversString, "${b.runsConceded}", "${b.wickets}", b.economy.fmt(1), "${b.wides + b.noBalls}"),
+                        emphasizeIndex = 2
+                    )
+                }
+            }
         }
 
-        val batList = card.batsmen.values.filter { it.runs > 0 || it.ballsFaced > 0 }
-        if (batList.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
+        // Over by over
+        if (card.overs.isNotEmpty()) {
+            item { SectionTitle("Over by over", Modifier.padding(top = 4.dp)) }
+            items(card.overs.reversed(), key = { "o${it.index}" }) { o ->
+                Row(
+                    Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Lsl.Turf)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("No batsman has run/faced a legal ball yet.", color = Color(0xFF475569), fontSize = 13.sp)
-                }
-            }
-        } else {
-            items(batList) { batsman ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                    border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.5f))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(batsman.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                if (batsman.isOut) {
-                                    val outText = when {
-                                        batsman.outType != null && batsman.bowlerName != null -> "out ${batsman.outType} b ${batsman.bowlerName}"
-                                        batsman.outType != null -> "out ${batsman.outType}"
-                                        else -> "out"
-                                    }
-                                    Text(outText, color = Color(0xFF94A3B8), fontSize = 11.sp)
-                                } else {
-                                    Text("not out", color = Color(0xFF10B981), fontSize = 11.sp)
-                                }
-                            }
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "${batsman.runs}",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 16.sp
-                                )
-                                Text(
-                                    "off ${batsman.ballsFaced}b",
-                                    color = Color(0xFF94A3B8),
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Text("Boundary: ${batsman.fours} fours • ${batsman.sixes} sixes", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                            Text("SR: ${String.format("%.1f", batsman.strikeRate)}", color = Color(0xFF38BDF8), fontSize = 11.sp)
-                        }
+                    Column(Modifier.width(64.dp)) {
+                        Text("Over ${o.index + 1}", style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
+                        Text(o.bowler, style = MaterialTheme.typography.labelSmall, color = Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                }
-            }
-        }
-
-        // Bowling stats section
-        item {
-            Text("BOWLING ANALYTICS", color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold, fontSize = 11.sp)
-        }
-
-        val bowlList = card.bowlers.values
-        if (bowlList.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No bowler has thrown a ball in this innings.", color = Color(0xFF475569), fontSize = 13.sp)
-                }
-            }
-        } else {
-            items(bowlList.toList()) { bowler ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                    border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(bowler.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("Wides: ${bowler.wides} • NoBalls: ${bowler.noBalls}", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("${bowler.wickets} Wkts", color = Color(0xFF10B981), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text("${bowler.runsConceded} Runs", color = Color.White, fontSize = 12.sp)
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("${bowler.oversString} ov", color = Color.White, fontSize = 13.sp)
-                                Text("Econ: ${String.format("%.1f", bowler.economy)}", color = Color(0xFF38BDF8), fontSize = 11.sp)
-                            }
-                        }
+                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        o.labels.take(9).forEach { BallChip(it, size = 26.dp) }
                     }
+                    Text("${o.runs}", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Lsl.Chalk)
                 }
             }
         }
     }
 }
 
-// Helpers for sharing & string export logs
-private fun generateMatchSummaryText(
+private fun dismissalText(b: BatsmanLiveStats): String {
+    val by = b.bowlerName
+    return when (b.outType) {
+        "BOWLED" -> "b $by"
+        "CAUGHT" -> "c & b $by"
+        "LBW" -> "lbw b $by"
+        "STUMPED" -> "st b $by"
+        "HIT_WICKET" -> "hit wicket b $by"
+        "RUN_OUT" -> "run out"
+        else -> "out"
+    }
+}
+
+private val colW = listOf(34.dp, 30.dp, 28.dp, 28.dp, 40.dp)
+
+@Composable
+private fun TableHeader(first: String, cols: List<String>) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Text(first, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, modifier = Modifier.weight(1f))
+        cols.forEachIndexed { i, c ->
+            Text(c, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, textAlign = TextAlign.End, modifier = Modifier.width(colW[i]))
+        }
+    }
+}
+
+@Composable
+private fun TableRow(
+    title: String,
+    subtitle: String?,
+    values: List<String>,
+    subtitleColor: Color = Lsl.Fade,
+    emphasizeFirst: Boolean = false,
+    emphasizeIndex: Int = if (emphasizeFirst) 0 else -1
+) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.labelSmall, color = subtitleColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        values.forEachIndexed { i, v ->
+            Text(
+                v,
+                fontFamily = if (i == emphasizeIndex) Scoreboard else null,
+                fontWeight = if (i == emphasizeIndex) FontWeight.Bold else FontWeight.Normal,
+                fontSize = if (i == emphasizeIndex) 18.sp else 14.sp,
+                color = if (i == emphasizeIndex) Lsl.Chalk else Lsl.Moss,
+                textAlign = TextAlign.End,
+                modifier = Modifier.width(colW[i])
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sharing
+// ---------------------------------------------------------------------------
+
+private fun summaryText(
     match: MatchEntity,
+    firstName: String,
+    secondName: String,
     first: InningsScorecard,
     second: InningsScorecard
 ): String {
-    return """
-🏏 LOCO STREET LEAGUE MATCH SUMMARY 🏏
--------------------------------------------
-📅 Date: ${SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(match.date))}
-⚔️ ${match.teamAName} vs ${match.teamBName}
-Overs: ${match.overs} • Gully League
-
-First Innings (${match.teamAName}):
-👉 Score: ${first.totalRuns}/${first.totalWickets} (${first.totalOversString} Overs)
-Top Batter: ${first.batsmen.values.maxByOrNull { it.runs }?.let { "${it.name} ${it.runs}(${it.ballsFaced})" } ?: "N/A"}
-Top Bowler: ${first.bowlers.values.maxByOrNull { it.wickets }?.let { "${it.name} ${it.wickets}/${it.runsConceded}" } ?: "N/A"}
-
-Second Innings (${match.teamBName}):
-👉 Score: ${second.totalRuns}/${second.totalWickets} (${second.totalOversString} Overs)
-Top Batter: ${second.batsmen.values.maxByOrNull { it.runs }?.let { "${it.name} ${it.runs}(${it.ballsFaced})" } ?: "N/A"}
-Top Bowler: ${second.bowlers.values.maxByOrNull { it.wickets }?.let { "${it.name} ${it.wickets}/${it.runsConceded}" } ?: "N/A"}
-
-🔥 RESULT: ${match.resultText.ifEmpty { "Match in progress!" }}
-🏆 MVP: ${match.topPerformer.ifEmpty { "N/A" }}
-
-Tracked live with Loco Street League scoring app!
-""".trimIndent()
+    fun topBat(c: InningsScorecard) = c.batsmen.values.filter { it.hasBatted }.maxByOrNull { it.runs }
+        ?.let { "${it.name} ${it.runs}(${it.ballsFaced})" } ?: "n/a"
+    fun topBowl(c: InningsScorecard) = c.bowlers.values.maxWithOrNull(compareBy<BowlerLiveStats> { it.wickets }.thenByDescending { it.runsConceded })
+        ?.let { "${it.name} ${it.wickets}/${it.runsConceded}" } ?: "n/a"
+    val date = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(match.date))
+    return buildString {
+        appendLine("🏏 Loco Street League")
+        appendLine("$firstName v $secondName, ${match.overs} overs, $date")
+        appendLine()
+        appendLine("$firstName ${first.totalRuns}/${first.totalWickets} (${first.totalOversString})")
+        appendLine("  Top bat: ${topBat(first)}  Top bowl: ${topBowl(first)}")
+        appendLine("$secondName ${second.totalRuns}/${second.totalWickets} (${second.totalOversString})")
+        appendLine("  Top bat: ${topBat(second)}  Top bowl: ${topBowl(second)}")
+        appendLine()
+        appendLine(if (match.status == "COMPLETED") "Result: ${match.resultText}" else "Match in progress")
+        if (match.topPerformer.isNotEmpty()) appendLine("Player of the match: ${match.topPerformer}")
+    }.trim()
 }
 
-private fun copyToClipboard(context: Context, label: String, text: String) {
+private fun shareText(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share scorecard"))
+}
+
+private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText(label, text)
-    clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "Match summary copied to clipboard!", Toast.LENGTH_SHORT).show()
+    clipboard.setPrimaryClip(ClipData.newPlainText("Match summary", text))
+    Toast.makeText(context, "Summary copied", Toast.LENGTH_SHORT).show()
 }

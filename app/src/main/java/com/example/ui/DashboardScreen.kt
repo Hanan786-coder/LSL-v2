@@ -1,37 +1,43 @@
 package com.example.ui
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.BallInfo
+import com.example.data.CricketScorer
+import com.example.data.JsonHelper
 import com.example.data.MatchEntity
-import com.example.data.TeamEntity
-import com.example.data.TournamentEntity
+import com.example.ui.theme.Lsl
+import com.example.ui.theme.Scoreboard
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: LocoViewModel,
@@ -44,614 +50,301 @@ fun DashboardScreen(
     val matches by viewModel.matches.collectAsState()
     val teams by viewModel.teams.collectAsState()
     val tournaments by viewModel.tournaments.collectAsState()
+    val players by viewModel.playerStats.collectAsState()
 
-    val ongoingMatches = matches.filter { it.status == "ONGOING" }
-    val completedMatches = matches.filter { it.status == "COMPLETED" }.take(3)
+    val ongoing = matches.filter { it.status == "ONGOING" }
+    val completed = matches.filter { it.status == "COMPLETED" }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = com.example.R.drawable.lsl_logo),
-                            contentDescription = "LSL App Logo",
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .border(1.5.dp, Color(0xFFF96116), CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            "LSL SPORTS CENTER",
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            letterSpacing = 1.2.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0F172A)
-                )
-            )
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Lsl.Pitch)
+            .testTag("dashboard"),
+        contentPadding = WindowInsets.safeDrawing.asPaddingValues().let {
+            PaddingValues(start = 16.dp, end = 16.dp, top = it.calculateTopPadding() + 8.dp, bottom = it.calculateBottomPadding() + 24.dp)
         },
-        containerColor = Color(0xFF0F172A)
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // Spacer to give un-congested breath
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            // Live / Active Match Banner (Cricbuzz style)
-            if (ongoingMatches.isNotEmpty()) {
-                item {
-                    Text(
-                        "LIVE MATCHES",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEF4444),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.5.sp
-                    )
-                }
-                items(ongoingMatches) { match ->
-                    LiveMatchCard(
-                        match = match,
-                        onCardClick = { viewModel.resumeScoring(match.id) }
-                    )
-                }
-            } else {
-                // Quick start hero card
-                item {
-                    HeroPromoCard(onStartMatchClick)
-                }
-            }
-
-            // Quick Operations Grid
-            item {
-                Text(
-                    "QUICK CATEGORIES",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp,
-                    letterSpacing = 1.5.sp,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                QuickCategoriesGrid(
-                    onStartMatchClick = onStartMatchClick,
-                    onManageTeamsClick = onManageTeamsClick,
-                    onTournamentsClick = onTournamentsClick,
-                    onHistoryClick = onHistoryClick,
-                    onLeaderboardClick = onLeaderboardClick
-                )
-            }
-
-            // Recent Completed Matches Section
-            if (completedMatches.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "RECENT RESULTS",
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF94A3B8),
-                            fontSize = 12.sp,
-                            letterSpacing = 1.5.sp
-                        )
-                        TextButton(onClick = onHistoryClick) {
-                            Text("See All", color = Color(0xFFF96116))
-                        }
-                    }
-                }
-                items(completedMatches) { match ->
-                    RecentMatchCard(
-                        match = match,
-                        onCardClick = {
-                            viewModel.resumeScoring(match.id)
-                        }
-                    )
-                }
-            } else {
-                item {
-                    Text(
-                        "RECENT RESULTS",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF94A3B8),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.5.sp
-                    )
-                }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF152035)),
-                        border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.5f))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SportsCricket,
-                                contentDescription = "Cricket Bat",
-                                tint = Color(0xFFF96116).copy(alpha = 0.6f),
-                                modifier = Modifier.size(44.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                "No recorded matches",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                "Gully statistics are blank! Tap elements above to create teams and score live matches on the streets.",
-                                color = Color(0xFF94A3B8),
-                                fontSize = 11.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Brief Tournament Showcase
-            if (tournaments.isNotEmpty()) {
-                item {
-                    Text(
-                        "ACTIVE LOCAL TOURNAMENTS",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF94A3B8),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-                items(tournaments.take(2)) { tournament ->
-                    TournamentRowCard(tournament = tournament, onCardClick = onTournamentsClick)
-                }
-            } else {
-                item {
-                    Text(
-                        "ACTIVE LOCAL TOURNAMENTS",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF94A3B8),
-                        fontSize = 12.sp,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF152035)),
-                        border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.5f))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.EmojiEvents,
-                                contentDescription = "Trophy",
-                                tint = Color(0xFFF59E0B).copy(alpha = 0.6f),
-                                modifier = Modifier.size(40.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                "No tournaments active",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                "Organize your local street series with standings and automatic team ladders.",
-                                color = Color(0xFF94A3B8),
-                                fontSize = 11.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun LiveMatchCard(match: MatchEntity, onCardClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCardClick() }
-            .testTag("live_match_card"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f))
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        // Brand header
+        item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFFEF4444))
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "LIVE scoring",
-                        color = Color(0xFFEF4444),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                }
-                Text(
-                    "Overs: ${match.overs}",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.lsl_logo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(40.dp).clip(CircleShape)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Score details
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Loco Street League", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
                     Text(
-                        match.teamAName,
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        match.teamBName,
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        "Innings ${match.currentInnings}",
-                        color = Color(0xFF10B981),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Resume Details ›",
-                        color = Color(0xFF38BDF8),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        greeting(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Lsl.Moss
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = Color(0xFF334155))
-            Spacer(modifier = Modifier.height(8.dp))
+        // Live matches first: that's where the scorer wants to be
+        if (ongoing.isNotEmpty()) {
+            items(ongoing, key = { "live-${it.id}" }) { m ->
+                LiveMatchCard(match = m, viewModel = viewModel, onClick = { viewModel.openMatch(m) })
+            }
+        }
 
-            Text(
-                text = "Gully Match ongoing in full action! Tap to resume live ball-by-ball scoring.",
-                color = Color(0xFF94A3B8),
-                fontSize = 12.sp
+        // Start a match
+        item {
+            val canStart = teams.size >= 2
+            StartMatchPanel(
+                canStart = canStart,
+                hasLive = ongoing.isNotEmpty(),
+                onClick = if (canStart) onStartMatchClick else onManageTeamsClick
             )
         }
-    }
-}
 
-@Composable
-fun HeroPromoCard(onStartClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(Color(0xFFF96116), Color(0xFFEA580C), Color(0xFFE11D48))
-                )
+        // Navigation list with real counts
+        item {
+            Panel(contentPadding = PaddingValues(vertical = 4.dp)) {
+                NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Mint, onManageTeamsClick, Modifier.testTag("nav_teams"))
+                NavDivider()
+                NavRow(Icons.Default.EmojiEvents, "Tournaments", countLabel(tournaments.size, "league"), Lsl.Sun, onTournamentsClick, Modifier.testTag("nav_tournaments"))
+                NavDivider()
+                NavRow(Icons.Default.Leaderboard, "Player stats", countLabel(players.distinctBy { it.playerName }.size, "player"), Lsl.Sky, onLeaderboardClick, Modifier.testTag("nav_stats"))
+                NavDivider()
+                NavRow(Icons.Default.History, "Match history", countLabel(completed.size, "match", "matches"), Lsl.Lilac, onHistoryClick, Modifier.testTag("nav_history"))
+            }
+        }
+
+        // Recent results
+        item {
+            SectionTitle(
+                "Recent results",
+                modifier = Modifier.padding(top = 8.dp),
+                trailing = {
+                    if (completed.size > 3) {
+                        Text(
+                            "See all",
+                            color = Lsl.Mint,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).pressable(onClick = onHistoryClick).padding(8.dp)
+                        )
+                    }
+                }
             )
-            .clickable { onStartClick() }
-            .padding(20.dp)
-            .testTag("hero_promo_card")
-    ) {
-        Column {
-            Text(
-                "READY FOR GULLY ACTION?",
-                color = Color.White.copy(alpha = 0.85f),
-                fontWeight = FontWeight.Bold,
-                fontSize = 11.sp,
-                letterSpacing = 1.5.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                "Start a Match Instantly",
-                color = Color.White,
-                fontWeight = FontWeight.Black,
-                fontSize = 22.sp
-            )
-            Text(
-                "Track overs, extras, wickets, individual striker rate, and dynamic points tables with ease.",
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
-            )
-            Button(
-                onClick = onStartClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Start Scoring Now", color = Color(0xFFF96116), fontWeight = FontWeight.Bold)
+        }
+        if (completed.isEmpty()) {
+            item {
+                Panel {
+                    Text("No finished matches yet", style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Results, top scorers and the player of the match show up here after your first game.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Lsl.Moss
+                    )
+                }
+            }
+        } else {
+            items(completed.take(3), key = { "done-${it.id}" }) { m ->
+                ResultCard(match = m, onClick = { viewModel.openMatch(m) })
             }
         }
     }
 }
 
+private fun greeting(): String {
+    val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (h) {
+        in 5..11 -> "Morning game? Teams are ready when you are."
+        in 12..16 -> "Afternoon game? Teams are ready when you are."
+        in 17..20 -> "Evening game? Teams are ready when you are."
+        else -> "Late one? Teams are ready when you are."
+    }
+}
+
+private fun countLabel(n: Int, singular: String, plural: String = singular + "s") =
+    if (n == 0) "None yet" else "$n ${if (n == 1) singular else plural}"
+
 @Composable
-fun QuickCategoriesGrid(
-    onStartMatchClick: () -> Unit,
-    onManageTeamsClick: () -> Unit,
-    onTournamentsClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onLeaderboardClick: () -> Unit
-) {
+private fun NavDivider() = HorizontalDivider(color = Lsl.Line, modifier = Modifier.padding(start = 64.dp, end = 16.dp))
+
+@Composable
+private fun NavRow(icon: ImageVector, title: String, meta: String, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = 60.dp)
+            .pressable(pressedScale = 0.98f, onClick = onClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            QuickCategoryCard(
-                title = "New Match",
-                icon = Icons.Default.SportsCricket,
-                tint = Color(0xFFF96116), // Blazing Orange
-                desc = "Instant 2-20 Overs",
-                onClick = onStartMatchClick
-            )
-            QuickCategoryCard(
-                title = "Tournaments",
-                icon = Icons.Default.EmojiEvents,
-                tint = Color(0xFFF59E0B), // Solar Gold
-                desc = "Points Table & Fixtures",
-                onClick = onTournamentsClick
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            QuickCategoryCard(
-                title = "Manage Teams",
-                icon = Icons.Default.People,
-                tint = Color(0xFF10B981), // Electric Green
-                desc = "Rosters & Player Names",
-                onClick = onManageTeamsClick
-            )
-            QuickCategoryCard(
-                title = "Player Stats",
-                icon = Icons.Default.BarChart,
-                tint = Color(0xFF38BDF8), // Ice Blue
-                desc = "Best Batsman/Bowler",
-                onClick = onLeaderboardClick
-            )
-        }
+        Box(
+            Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(tint.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center
+        ) { Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp)) }
+        Spacer(Modifier.width(14.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, modifier = Modifier.weight(1f))
+        Text(meta, style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Lsl.Fade)
     }
 }
 
 @Composable
-fun QuickCategoryCard(
-    title: String,
-    icon: ImageVector,
-    tint: Color,
-    desc: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
+private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-        border = BorderStroke(1.dp, Color(0xFF334155))
+            .clip(RoundedCornerShape(22.dp))
+            .background(if (hasLive) Lsl.Turf else Lsl.Mint)
+            .pressable(pressedScale = 0.98f, onClick = onClick)
+            .padding(20.dp)
+            .testTag("hero_promo_card"),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = tint,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+        val fg = if (hasLive) Lsl.Chalk else Lsl.MintDeep
+        Column(Modifier.weight(1f)) {
             Text(
-                title,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontSize = 14.sp
+                when {
+                    !canStart -> "Add two teams to start"
+                    hasLive -> "Start another match"
+                    else -> "Start a match"
+                },
+                style = MaterialTheme.typography.headlineSmall,
+                color = fg
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
-                desc,
-                color = Color(0xFF94A3B8),
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                if (canStart) "Pick two teams, toss the coin, score every ball."
+                else "Create squads with player names, then score your first game.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = fg.copy(alpha = 0.8f)
             )
         }
-    }
-}
-
-@Composable
-fun RecentMatchCard(match: MatchEntity, onCardClick: () -> Unit) {
-    val dateString = remember(match.date) {
-        val sdf = SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault())
-        sdf.format(Date(match.date))
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCardClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-        border = BorderStroke(1.dp, Color(0xFF334155))
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    dateString,
-                    color = Color(0xFF94A3B8),
-                    fontSize = 11.sp
-                )
-                Text(
-                    "Overs: ${match.overs}",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 11.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            match.teamAName,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                        if (match.winnerTeamId == match.teamAId) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(Icons.Default.Check, contentDescription = "Winner", tint = Color(0xFF10B981), modifier = Modifier.size(14.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            match.teamBName,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                        if (match.winnerTeamId == match.teamBId) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(Icons.Default.Check, contentDescription = "Winner", tint = Color(0xFF10B981), modifier = Modifier.size(14.dp))
-                        }
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF334155))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        "Result",
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = Color(0xFF334155))
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                match.resultText.ifEmpty { "No finalized result text" },
-                color = Color(0xFFF59E0B),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            if (match.topPerformer.isNotEmpty()) {
-                Text(
-                    "🔥 Top Performer: ${match.topPerformer}",
-                    color = Color(0xFF38BDF8),
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(top = 4.dp),
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun TournamentRowCard(tournament: TournamentEntity, onCardClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCardClick() },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-        border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.6f))
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier.size(52.dp).clip(CircleShape).background(if (hasLive) Lsl.Mint else Lsl.MintDeep),
+            contentAlignment = Alignment.Center
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = "Tournament",
-                    tint = Color(0xFFF59E0B),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    tournament.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Text(
-                "Tables ›",
-                color = Color(0xFF10B981),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+            Icon(
+                if (canStart) Icons.Default.SportsCricket else Icons.Default.GroupAdd,
+                contentDescription = null,
+                tint = if (hasLive) Lsl.MintDeep else Lsl.Mint,
+                modifier = Modifier.size(26.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick: () -> Unit) {
+    val balls = remember(match.ballsJson) { JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java) }
+    val card = remember(balls, match.currentInnings) { CricketScorer.calculateInningsScorecard(balls, match.currentInnings, emptyList()) }
+    val batting = viewModel.teamName(match, viewModel.battingTeamId(match))
+    val bowling = viewModel.teamName(match, viewModel.bowlingTeamId(match))
+
+    val pulse = rememberInfiniteTransition(label = "live")
+    val a by pulse.animateFloat(0.35f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "live-dot")
+
+    Panel(
+        modifier = Modifier.fillMaxWidth().testTag("live_match_card"),
+        shape = RoundedCornerShape(22.dp),
+        onClick = onClick
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(8.dp).graphicsLayer { alpha = a }.clip(CircleShape).background(Lsl.Tape))
+            Spacer(Modifier.width(8.dp))
+            Text("Live", style = MaterialTheme.typography.labelLarge, color = Lsl.Tape)
+            Spacer(Modifier.weight(1f))
+            Text("Tap to keep scoring", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Monogram(batting, size = 36.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(batting, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("v $bowling", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    "${card.totalRuns}/${card.totalWickets}",
+                    fontFamily = Scoreboard,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 32.sp,
+                    color = Lsl.Chalk
+                )
+                Text("${card.totalOversString} of ${match.overs} ov", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+            }
+        }
+        if (match.currentInnings == 2 && match.targetRuns > 0) {
+            Spacer(Modifier.height(8.dp))
+            val need = (match.targetRuns - card.totalRuns).coerceAtLeast(0)
+            val left = (match.overs * 6 - card.legalBallsBowled).coerceAtLeast(0)
+            Text("Need $need off $left balls", style = MaterialTheme.typography.labelLarge, color = Lsl.Sun)
+        }
+    }
+}
+
+@Composable
+fun ResultCard(match: MatchEntity, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
+    val balls = remember(match.ballsJson) { JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java) }
+    val first = remember(balls) { CricketScorer.calculateInningsScorecard(balls, 1, emptyList()) }
+    val second = remember(balls) { CricketScorer.calculateInningsScorecard(balls, 2, emptyList()) }
+    val firstId = match.battingFirstTeamId
+    val secondId = if (firstId == match.teamAId) match.teamBId else match.teamAId
+    val firstName = if (firstId == match.teamAId) match.teamAName else match.teamBName
+    val secondName = if (secondId == match.teamAId) match.teamAName else match.teamBName
+    val date = remember(match.date) { SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(Date(match.date)) }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Lsl.Turf)
+            .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Text("$date, ${match.overs} overs", style = MaterialTheme.typography.labelSmall, color = Lsl.Moss)
+        Spacer(Modifier.height(8.dp))
+        TeamScoreLine(firstName, "${first.totalRuns}/${first.totalWickets}", first.totalOversString, match.winnerTeamId == firstId)
+        Spacer(Modifier.height(6.dp))
+        TeamScoreLine(secondName, "${second.totalRuns}/${second.totalWickets}", second.totalOversString, match.winnerTeamId == secondId)
+        Spacer(Modifier.height(10.dp))
+        Text(match.resultText.ifEmpty { "Result pending" }, style = MaterialTheme.typography.labelLarge, color = Lsl.Sun)
+        if (match.topPerformer.isNotEmpty()) {
+            Text("Player of the match: ${match.topPerformer}", style = MaterialTheme.typography.labelMedium, color = Lsl.Moss)
+        }
+    }
+}
+
+@Composable
+private fun TeamScoreLine(name: String, score: String, overs: String, won: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Monogram(name, size = 26.dp)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            name,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (won) Lsl.Chalk else Lsl.Moss,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (won) {
+            Icon(Icons.Default.EmojiEvents, "Winner", tint = Lsl.Sun, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(
+            score,
+            fontFamily = Scoreboard,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            color = if (won) Lsl.Chalk else Lsl.Moss
+        )
+        Text(" ($overs)", style = MaterialTheme.typography.labelSmall, color = Lsl.Fade)
     }
 }

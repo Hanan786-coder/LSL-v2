@@ -1,26 +1,36 @@
 package com.example.ui
 
-import androidx.compose.foundation.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.TeamEntity
+import com.example.data.TournamentEntity
+import com.example.ui.theme.Lsl
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TeamsManageScreen(
     viewModel: LocoViewModel,
@@ -29,291 +39,255 @@ fun TeamsManageScreen(
     val teams by viewModel.teams.collectAsState()
     val tournaments by viewModel.tournaments.collectAsState()
 
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<TeamEntity?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<TeamEntity?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Cricket Team Rosters", fontWeight = FontWeight.Black, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F172A)),
-                actions = {
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Create Team", tint = Color(0xFFF96116))
-                    }
-                }
-            )
-        },
+    LslScreen(
+        title = "Teams",
+        subtitle = if (teams.isEmpty()) null else "${teams.size} squad${if (teams.size == 1) "" else "s"}",
+        onBack = onBack,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateDialog = true },
-                containerColor = Color(0xFFF96116),
-                contentColor = Color.White,
-                modifier = Modifier.testTag("add_team_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create New Team")
+            if (teams.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = { creating = true },
+                    containerColor = Lsl.Mint,
+                    contentColor = Lsl.MintDeep,
+                    icon = { Icon(Icons.Default.Add, null) },
+                    text = { Text("New team") },
+                    modifier = Modifier.testTag("add_team_fab")
+                )
             }
-        },
-        containerColor = Color(0xFF0F172A)
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(18.dp)
-        ) {
-            Text(
-                "MANAGE LOCAL TEAMS & SQUADS",
-                color = Color(0xFF94A3B8),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
+        }
+    ) { inner ->
+        if (teams.isEmpty()) {
+            EmptyState(
+                icon = Icons.Default.Groups,
+                title = "No teams yet",
+                body = "Add your squads with player names. Every ball they face or bowl is tracked to their name.",
+                actionText = "Add a team",
+                onAction = { creating = true },
+                modifier = Modifier.padding(inner).padding(top = 48.dp)
             )
-            Spacer(modifier = Modifier.height(14.dp))
-
-            if (teams.isEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF152035)),
-                    border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.5f))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(28.dp)
-                            .fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(32.dp))
-                                .background(Color(0xFFF96116).copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.People,
-                                contentDescription = "Teams",
-                                tint = Color(0xFFF96116),
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No squads enrolled yet",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap the '+' action button to enroll your neighborhood squads! Add list of custom player names to unlock individual ball-by-ball striking career tracking.",
-                            color = Color(0xFF94A3B8),
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(teams) { team ->
-                        TeamRosterCard(
-                            team = team,
-                            onDeleteClick = { viewModel.deleteTeam(team) }
-                        )
-                    }
+        } else {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(inner),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(teams, key = { it.id }) { team ->
+                    TeamCard(
+                        team = team,
+                        tournament = tournaments.find { it.id == team.tournamentId },
+                        onEdit = { editing = team },
+                        onDelete = { deleting = team },
+                        modifier = Modifier.animateItem()
+                    )
                 }
             }
         }
     }
 
-    // Create Team Dialog Modal
-    if (showCreateDialog) {
-        var teamName by remember { mutableStateOf("") }
-        var rawPlayerNames by remember { mutableStateOf("") }
-        var selectedTourneyId by remember { mutableStateOf<Int?>(null) }
-
-        AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
-            shape = RoundedCornerShape(24.dp),
-            containerColor = Color(0xFF0F172A),
-            modifier = Modifier.border(2.dp, Color(0xFFF96116), RoundedCornerShape(24.dp)),
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Groups,
-                        contentDescription = null,
-                        tint = Color(0xFFF96116),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text("CREATE NEW SQUAD", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 0.5.sp)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Input your street squadron identity and registered players:", color = Color(0xFF94A3B8), fontSize = 12.sp)
-                    OutlinedTextField(
-                        value = teamName,
-                        onValueChange = { teamName = it },
-                        label = { Text("Team Name / Colony identity") },
-                        placeholder = { Text("e.g. Colony Chargers") },
-                        modifier = Modifier.fillMaxWidth().testTag("team_name_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFF96116),
-                            unfocusedBorderColor = Color(0xFF334155),
-                            unfocusedLabelColor = Color(0xFF94A3B8),
-                            focusedLabelColor = Color(0xFFF96116),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = rawPlayerNames,
-                        onValueChange = { rawPlayerNames = it },
-                        label = { Text("Players roster (comma-separated list)") },
-                        placeholder = { Text("e.g. Ali Khan, Babar Zaman, Shaheen Afridi") },
-                        modifier = Modifier.fillMaxWidth().height(110.dp),
-                        maxLines = 5,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFF96116),
-                            unfocusedBorderColor = Color(0xFF334155),
-                            unfocusedLabelColor = Color(0xFF94A3B8),
-                            focusedLabelColor = Color(0xFFF96116),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-
-                    if (tournaments.isNotEmpty()) {
-                        Text("Link with active tournament (Optional):", color = Color(0xFF94A3B8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            InputChip(
-                                selected = selectedTourneyId == null,
-                                onClick = { selectedTourneyId = null },
-                                label = { Text("None") }
-                            )
-                            tournaments.forEach { tour ->
-                                InputChip(
-                                    selected = selectedTourneyId == tour.id,
-                                    onClick = { selectedTourneyId = tour.id },
-                                    label = { Text(tour.name) }
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (teamName.isNotBlank() && rawPlayerNames.isNotBlank()) {
-                            val playersList = rawPlayerNames.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                            viewModel.createTeam(teamName, playersList, selectedTourneyId)
-                            showCreateDialog = false
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("SAVE", color = Color.Black, fontWeight = FontWeight.Black)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) {
-                    Text("CANCEL", color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
-                }
+    if (creating || editing != null) {
+        TeamEditorSheet(
+            existing = editing,
+            tournaments = tournaments,
+            onDismiss = { creating = false; editing = null },
+            onSave = { name, players, tid ->
+                val e = editing
+                if (e == null) viewModel.createTeam(name, players, tid) else viewModel.updateTeam(e, name, players, tid)
+                creating = false; editing = null
             }
+        )
+    }
+
+    deleting?.let { t ->
+        ConfirmDialog(
+            title = "Delete ${t.name}?",
+            body = "The squad is removed. Finished matches and player career stats stay in history.",
+            confirmText = "Delete team",
+            onConfirm = { viewModel.deleteTeam(t) },
+            onDismiss = { deleting = null }
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TeamRosterCard(team: TeamEntity, onDeleteClick: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+private fun TeamCard(
+    team: TeamEntity,
+    tournament: TournamentEntity?,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by rememberSaveable(team.id) { mutableStateOf(false) }
+    val players = remember(team.playerNames) { team.playerNames.toPlayerList() }
+    val chevron by animateFloatAsState(if (expanded) 180f else 0f, tween(220), label = "chev")
 
-    val players = remember(team.playerNames) {
-        team.playerNames.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-    }
-
-    Card(
-        modifier = Modifier
+    Column(
+        modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF152035)),
-        border = BorderStroke(1.dp, Color(0xFF334155).copy(alpha = 0.6f))
+            .clip(RoundedCornerShape(18.dp))
+            .background(Lsl.Turf)
+            .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .pressable(pressedScale = 0.99f) { expanded = !expanded }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Monogram(team.name, size = 44.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(team.name, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    buildString {
+                        append("${players.size} player${if (players.size == 1) "" else "s"}")
+                        if (tournament != null) append(", ${tournament.name}")
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Lsl.Moss,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(Icons.Default.ExpandMore, if (expanded) "Hide players" else "Show players", tint = Lsl.Moss, modifier = Modifier.graphicsLayer { rotationZ = chevron })
+        }
+        if (expanded) {
+            FlowRow(
+                Modifier.padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Groups, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(team.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("${players.size} Players registered", color = Color(0xFF94A3B8), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                players.forEach { p ->
+                    Row(
+                        Modifier.clip(RoundedCornerShape(10.dp)).background(Lsl.TurfRaised).padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(p, style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
                     }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onDeleteClick) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444).copy(alpha = 0.8f))
-                    }
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = "Expand",
-                        tint = Color.White
-                    )
                 }
             }
+            Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuietButton("Edit squad", onEdit, Modifier.weight(1f), icon = Icons.Default.Edit)
+                QuietButton("Delete", onDelete, icon = Icons.Default.DeleteOutline, tint = Lsl.Tape)
+            }
+        }
+    }
+}
 
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = Color(0xFF334155))
-                Spacer(modifier = Modifier.height(10.dp))
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun TeamEditorSheet(
+    existing: TeamEntity?,
+    tournaments: List<TournamentEntity>,
+    onDismiss: () -> Unit,
+    onSave: (String, List<String>, Int?) -> Unit
+) {
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    val players = remember { mutableStateListOf<String>().apply { addAll(existing?.playerNames?.toPlayerList().orEmpty()) } }
+    var entry by remember { mutableStateOf("") }
+    var tid by remember { mutableStateOf(existing?.tournamentId) }
 
-                Text("PLAYER ROSTER:", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Wrap in flow layouts or grids
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    players.forEachIndexed { idx, name ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(RoundedCornerShape(9.dp))
-                                    .background(Color(0xFF10B981).copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("${idx + 1}", color = Color(0xFF10B981), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    fun commitEntry() {
+        // Accept a pasted list too: "Ali, Babar, Shaheen"
+        entry.toPlayerList().forEach { p -> if (players.none { it.equals(p, true) }) players.add(p) }
+        entry = ""
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Lsl.Turf,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp)
+                .imePadding(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(if (existing == null) "New team" else "Edit ${existing.name}", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk)
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Team name") },
+                placeholder = { Text("Colony Chargers") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                colors = lslFieldColors(),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth().testTag("team_name_input")
+            )
+
+            SectionTitle("Players (${players.size})")
+            OutlinedTextField(
+                value = entry,
+                onValueChange = {
+                    if (it.endsWith(",") || it.endsWith("\n")) { entry = it; commitEntry() } else entry = it
+                },
+                label = { Text("Add a player") },
+                placeholder = { Text("Type a name, press enter") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { commitEntry() }),
+                trailingIcon = {
+                    IconButton(onClick = { commitEntry() }, enabled = entry.isNotBlank()) {
+                        Icon(Icons.Default.PersonAdd, "Add player", tint = if (entry.isNotBlank()) Lsl.Mint else Lsl.Fade)
+                    }
+                },
+                colors = lslFieldColors(),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth().testTag("player_input")
+            )
+
+            if (players.isEmpty()) {
+                Text("Batting order follows the order you add players. You need at least 2.", style = MaterialTheme.typography.bodySmall, color = Lsl.Moss)
+            } else {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    players.forEachIndexed { i, p ->
+                        Row(
+                            Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Lsl.TurfRaised)
+                                .padding(start = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("${i + 1}", style = MaterialTheme.typography.labelSmall, color = Lsl.Mint)
+                            Spacer(Modifier.width(6.dp))
+                            Text(p, style = MaterialTheme.typography.labelLarge, color = Lsl.Chalk)
+                            IconButton(onClick = { players.removeAt(i) }, modifier = Modifier.size(34.dp)) {
+                                Icon(Icons.Default.Close, "Remove $p", tint = Lsl.Moss, modifier = Modifier.size(16.dp))
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(name, color = Color.White, fontSize = 14.sp)
                         }
                     }
                 }
             }
+
+            if (tournaments.isNotEmpty()) {
+                SectionTitle("Tournament")
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ChoiceChip("None", tid == null, { tid = null })
+                    tournaments.forEach { t -> ChoiceChip(t.name, tid == t.id, { tid = t.id }, accent = Lsl.Sun) }
+                }
+            }
+
+            val canSave = name.isNotBlank() && (players.size + entry.toPlayerList().size) >= 2
+            PrimaryButton(
+                text = if (existing == null) "Save team" else "Save changes",
+                enabled = canSave,
+                modifier = Modifier.fillMaxWidth().testTag("save_team"),
+                onClick = {
+                    commitEntry()
+                    onSave(name, players.toList(), tid)
+                }
+            )
         }
     }
 }
