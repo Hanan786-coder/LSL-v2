@@ -49,7 +49,7 @@ class MatchRepository(private val locoDao: LocoDao) {
 
     // --- Save/Update accumulated stats when a match completes ---
     suspend fun updatePlayerStatsFromCompletedMatch(match: MatchEntity) {
-        val balls = JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java)
+        val balls = CricketScorer.parseBalls(match.ballsJson)
         if (balls.isEmpty()) return
 
         // Extract and aggregate stats from the ball list

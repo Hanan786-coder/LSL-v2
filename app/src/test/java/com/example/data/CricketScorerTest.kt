@@ -73,4 +73,32 @@ class CricketScorerTest {
         assertEquals(0, card.bowlers["X"]!!.wickets)
         assertEquals("W+1", card.thisOverBalls.single())
     }
+
+    @Test
+    fun legacyNoBallAndWideAreRepaired() {
+        // Old encoding: no ball stored 1 + runs as extras, wide with runs also kept runs on the bat
+        val oldNb = ball(runs = 4, extraRuns = 5, extraType = "NO_BALL")
+        val oldWd = ball(runs = 1, extraRuns = 2, extraType = "WIDE")
+        val card = CricketScorer.calculateInningsScorecard(listOf(oldNb, oldWd), 1, emptyList())
+        assertEquals(5 + 2, card.totalRuns)
+        assertEquals(4, card.batsmen["A"]!!.runs)
+        // Repair is idempotent
+        assertEquals(CricketScorer.normalize(oldNb), CricketScorer.normalize(CricketScorer.normalize(oldNb)))
+    }
+
+    @Test
+    fun legacyJsonWithoutFielderStillParses() {
+        val json = """[{"id":"x","overIndex":0,"ballNumber":1,"runs":2,"extraRuns":0,"isExtra":false,"extraType":null,"isWicket":false,"wicketType":null,"striker":"A","nonStriker":"B","bowler":"X","dismissedPlayer":null,"innings":1,"timestamp":1}]"""
+        val balls = CricketScorer.parseBalls(json)
+        assertEquals(1, balls.size)
+        assertEquals(null, balls[0].fielder)
+    }
+
+    @Test
+    fun fielderIsRecordedOnDismissal() {
+        val b = ball(wicket = true, wicketType = "CAUGHT").copy(fielder = "Fahad")
+        val card = CricketScorer.calculateInningsScorecard(listOf(b), 1, listOf("A", "B"))
+        assertEquals("Fahad", card.batsmen["A"]!!.fielderName)
+        assertEquals(1, card.bowlers["X"]!!.wickets)
+    }
 }

@@ -9,6 +9,7 @@ data class BatsmanLiveStats(
     val isOut: Boolean = false,
     val outType: String? = null,
     val bowlerName: String? = null,
+    val fielderName: String? = null,
     val isStriker: Boolean = false,
     /** Order in which the batter first appeared at the crease; Int.MAX_VALUE if never batted. */
     val battingOrder: Int = Int.MAX_VALUE
@@ -79,6 +80,22 @@ data class InningsScorecard(
  */
 object CricketScorer {
 
+    /**
+     * The one place ball logs are read. Also repairs logs written before the scoring fix,
+     * where a no ball stored 1 + runs as extras and a wide with runs also credited the bat:
+     *  - NO_BALL with extraRuns > 1  -> extraRuns = 1
+     *  - WIDE with runs > 0          -> runs = 0 (extraRuns already holds 1 + runs)
+     * Both shapes can never be produced by the current scorer, so the repair is safe to re-run.
+     */
+    fun parseBalls(json: String): List<BallInfo> =
+        JsonHelper.listFromJson(json, BallInfo::class.java).map(::normalize)
+
+    fun normalize(b: BallInfo): BallInfo = when {
+        b.extraType == "NO_BALL" && b.extraRuns > 1 -> b.copy(extraRuns = 1)
+        b.extraType == "WIDE" && b.runs > 0 -> b.copy(runs = 0, extraRuns = maxOf(b.extraRuns, 1 + b.runs))
+        else -> b
+    }
+
     fun isLegal(ball: BallInfo): Boolean = ball.extraType != "WIDE" && ball.extraType != "NO_BALL"
 
     /** Short, scoreboard-style label for a single delivery. */
@@ -120,7 +137,7 @@ object CricketScorer {
             if (!s.hasBatted) batsmenStats[name] = s.copy(battingOrder = nextBattingOrder++)
         }
 
-        val inningsBalls = balls.filter { it.innings == inningsId }
+        val inningsBalls = balls.filter { it.innings == inningsId }.map(::normalize)
 
         // Over tracking
         val overs = mutableListOf<OverSummary>()
@@ -172,10 +189,10 @@ object CricketScorer {
                 val outPlayer = ball.dismissedPlayer ?: batName
                 val outType = ball.wicketType ?: "OUT"
                 if (outPlayer == batName) {
-                    striker = striker.copy(isOut = true, outType = outType, bowlerName = bowlName)
+                    striker = striker.copy(isOut = true, outType = outType, bowlerName = bowlName, fielderName = ball.fielder)
                 } else {
                     val other = batsmenStats[outPlayer] ?: BatsmanLiveStats(name = outPlayer)
-                    batsmenStats[outPlayer] = other.copy(isOut = true, outType = outType, bowlerName = bowlName)
+                    batsmenStats[outPlayer] = other.copy(isOut = true, outType = outType, bowlerName = bowlName, fielderName = ball.fielder)
                 }
                 totalWickets++
             }

@@ -241,7 +241,7 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
 
 @Composable
 private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick: () -> Unit) {
-    val balls = remember(match.ballsJson) { JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java) }
+    val balls = remember(match.ballsJson) { CricketScorer.parseBalls(match.ballsJson) }
     val card = remember(balls, match.currentInnings) { CricketScorer.calculateInningsScorecard(balls, match.currentInnings, emptyList()) }
     val batting = viewModel.teamName(match, viewModel.battingTeamId(match))
     val bowling = viewModel.teamName(match, viewModel.bowlingTeamId(match))
@@ -291,7 +291,7 @@ private fun LiveMatchCard(match: MatchEntity, viewModel: LocoViewModel, onClick:
 
 @Composable
 fun ResultCard(match: MatchEntity, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
-    val balls = remember(match.ballsJson) { JsonHelper.listFromJson(match.ballsJson, BallInfo::class.java) }
+    val balls = remember(match.ballsJson) { CricketScorer.parseBalls(match.ballsJson) }
     val first = remember(balls) { CricketScorer.calculateInningsScorecard(balls, 1, emptyList()) }
     val second = remember(balls) { CricketScorer.calculateInningsScorecard(balls, 2, emptyList()) }
     val firstId = match.battingFirstTeamId

@@ -29,7 +29,8 @@ abstract class LocoDatabase : RoomDatabase() {
                     LocoDatabase::class.java,
                     "loco_cricket_database"
                 )
-                .fallbackToDestructiveMigration()
+                // No destructive fallback: a schema change must ship a Migration,
+                // so an app update can never silently wipe saved matches and stats.
                 .build()
                 INSTANCE = instance
                 instance

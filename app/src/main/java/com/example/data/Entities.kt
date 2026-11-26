@@ -20,7 +20,10 @@ data class BallInfo(
     val bowler: String,
     val dismissedPlayer: String?,
     val innings: Int,            // 1 or 2
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    // Who took the catch / effected the run out or stumping. Optional so ball logs
+    // saved by earlier versions still load unchanged (no database migration needed).
+    val fielder: String? = null
 )
 
 @Entity(tableName = "tournaments")

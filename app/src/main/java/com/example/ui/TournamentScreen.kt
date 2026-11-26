@@ -226,7 +226,7 @@ private fun TournamentDetail(
                         null -> { tied++; form += 'T' }
                         else -> { lost++; form += 'L' }
                     }
-                    val balls = JsonHelper.listFromJson(m.ballsJson, BallInfo::class.java)
+                    val balls = CricketScorer.parseBalls(m.ballsJson)
                     val mine = if (m.battingFirstTeamId == team.id) 1 else 2
                     val theirs = if (mine == 1) 2 else 1
                     val s = CricketScorer.calculateInningsScorecard(balls, mine, emptyList())
