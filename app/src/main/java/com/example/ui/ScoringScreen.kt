@@ -84,6 +84,17 @@ fun ScoringScreen(
     onBackToDashboard: () -> Unit,
     onViewScorecardClick: () -> Unit
 ) {
+    val m by viewModel.activeMatch.collectAsState()
+    ProvideSquads(viewModel, m) { ScoringScreenContent(viewModel, onBackToDashboard, onViewScorecardClick) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScoringScreenContent(
+    viewModel: LocoViewModel,
+    onBackToDashboard: () -> Unit,
+    onViewScorecardClick: () -> Unit
+) {
     val match by viewModel.activeMatch.collectAsState()
     val teams by viewModel.teams.collectAsState()
     val showDismissal by viewModel.showDismissalDialog.collectAsState()
@@ -775,14 +786,17 @@ private fun CreasePanel(
         ) {
             Icon(Icons.Default.SportsBaseball, null, tint = Lsl.Mist, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(8.dp))
-            Text(
-                match.currentBowler.ifEmpty { "Pick a bowler" },
-                style = MaterialTheme.typography.titleSmall,
-                color = Lsl.Chalk,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    match.currentBowler.ifEmpty { "Pick a bowler" },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Lsl.Chalk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (LocalSquadLookup.current(match.currentBowler)?.captain == true) { Spacer(Modifier.width(6.dp)); CaptainMark(size = 16.dp) }
+            }
             Text(
                 "${bowler?.oversString ?: "0.0"}-${bowler?.runsConceded ?: 0}-${bowler?.wickets ?: 0}",
                 fontFamily = Scoreboard,
@@ -838,14 +852,19 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
                 .background(dot)
         )
         Spacer(Modifier.width(8.dp))
-        Text(
-            name.ifEmpty { "Pick a batter" },
-            style = MaterialTheme.typography.titleSmall,
-            color = nameColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
+        val spot = LocalSquadLookup.current(name)
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                name.ifEmpty { "Pick a batter" },
+                style = MaterialTheme.typography.titleSmall,
+                color = nameColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            if (spot?.captain == true) { Spacer(Modifier.width(6.dp)); CaptainMark(size = 16.dp) }
+            if (spot != null && !compact) { Spacer(Modifier.width(4.dp)); RoleBadge(spot.role) }
+        }
         Text(
             "${stats?.runs ?: 0}",
             fontFamily = Scoreboard,
@@ -1037,6 +1056,9 @@ private fun WicketSheet(
     var incoming by remember { mutableStateOf(remaining.firstOrNull()) }
     var fielder by remember { mutableStateOf<String?>(null) }
     val needsFielder = type in FielderWickets
+    val lookup = LocalSquadLookup.current
+    val keeper = bowlingRoster.firstOrNull { lookup(it)?.role == com.example.data.PlayerRole.KEEPER }
+    LaunchedEffect(type) { if (type == "STUMPED" && fielder == null) fielder = keeper }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1102,7 +1124,11 @@ private fun WicketSheet(
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         bowlingRoster.forEach { f ->
                             ChoiceChip(
-                                text = if (f == match.currentBowler && type == "CAUGHT") "$f (bowler)" else f,
+                                text = when {
+                                    f == match.currentBowler && type == "CAUGHT" -> "$f (bowler)"
+                                    f == keeper -> "$f (wk)"
+                                    else -> f
+                                },
                                 selected = fielder == f,
                                 onClick = { fielder = if (fielder == f) null else f },
                                 leading = { Monogram(f, size = 22.dp) }
@@ -1183,10 +1209,24 @@ private fun BowlerSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 color = Lsl.Chalk
             )
+            Text("Bowlers and all-rounders first", style = MaterialTheme.typography.bodySmall, color = Lsl.Mist)
             Spacer(Modifier.height(12.dp))
+            val lookup = LocalSquadLookup.current
+            val ordered = roster.withIndex().sortedBy { (i, n) ->
+                val r = lookup(n)?.role
+                val rank = when (r) {
+                    com.example.data.PlayerRole.BOWLER -> 0
+                    com.example.data.PlayerRole.ALL_ROUNDER -> 1
+                    com.example.data.PlayerRole.UNSET, null -> 2
+                    com.example.data.PlayerRole.BATTER -> 3
+                    com.example.data.PlayerRole.KEEPER -> 4
+                }
+                rank * 1000 + i
+            }.map { it.value }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 420.dp)) {
-                items(roster) { name ->
+                items(ordered, key = { it }) { name ->
                     val s = info.bowlers[name]
+                    val spot = lookup(name)
                     val blocked = overJustEnded && name == current
                     Row(
                         Modifier
@@ -1200,7 +1240,11 @@ private fun BowlerSheet(
                         Monogram(name, size = 34.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(name, style = MaterialTheme.typography.titleSmall, color = if (blocked) Lsl.Fade else Lsl.Chalk)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(name, style = MaterialTheme.typography.titleSmall, color = if (blocked) Lsl.Fade else Lsl.Chalk)
+                                if (spot?.captain == true) { Spacer(Modifier.width(6.dp)); CaptainMark(size = 16.dp) }
+                                if (spot != null) { Spacer(Modifier.width(6.dp)); RoleBadge(spot.role) }
+                            }
                             Text(
                                 if (blocked) "Bowled the last over" else if (s == null) "Yet to bowl" else "Econ ${s.economy.fmt(1)}",
                                 style = MaterialTheme.typography.labelSmall,
@@ -1267,7 +1311,12 @@ private fun BatterSheet(
                         Monogram(name, size = 34.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(name, style = MaterialTheme.typography.titleSmall, color = Lsl.Chalk)
+                                val spot = LocalSquadLookup.current(name)
+                                if (spot?.captain == true) { Spacer(Modifier.width(6.dp)); CaptainMark(size = 16.dp) }
+                                if (spot != null) { Spacer(Modifier.width(6.dp)); RoleBadge(spot.role) }
+                            }
                             Text(
                                 when {
                                     other -> "At the other end"
