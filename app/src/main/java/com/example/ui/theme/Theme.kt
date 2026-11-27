@@ -7,15 +7,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 
-private val CrestNight = darkColorScheme(
-    primary = Lsl.Flame,
-    onPrimary = Lsl.FlameInk,
-    primaryContainer = Lsl.DeckRaised,
+private val FloodlitPitch = darkColorScheme(
+    primary = Lsl.Volt,
+    onPrimary = Lsl.VoltInk,
+    primaryContainer = Lsl.Forest,
     onPrimaryContainer = Lsl.Chalk,
-    secondary = Lsl.Gold,
-    onSecondary = Lsl.Night,
-    tertiary = Lsl.Sky,
+    secondary = Lsl.Field,
+    onSecondary = Lsl.Chalk,
+    secondaryContainer = Lsl.Teal,
+    onSecondaryContainer = Lsl.Chalk,
+    tertiary = Lsl.Aqua,
     onTertiary = Lsl.Night,
+    tertiaryContainer = Lsl.Teal,
+    onTertiaryContainer = Lsl.Chalk,
     error = Lsl.Tape,
     onError = Lsl.Night,
     background = Lsl.Night,
@@ -29,7 +33,7 @@ private val CrestNight = darkColorScheme(
     surfaceContainerHighest = Lsl.DeckRaised,
     surfaceContainerLow = Lsl.Night,
     outline = Lsl.Line,
-    outlineVariant = Lsl.Line,
+    outlineVariant = Lsl.Slate,
     inverseSurface = Lsl.Chalk,
     inverseOnSurface = Lsl.Night,
 )
@@ -46,7 +50,7 @@ private val LslShapes = Shapes(
 @Composable
 fun MyApplicationTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = CrestNight,
+        colorScheme = FloodlitPitch,
         typography = Typography,
         shapes = LslShapes,
         content = content

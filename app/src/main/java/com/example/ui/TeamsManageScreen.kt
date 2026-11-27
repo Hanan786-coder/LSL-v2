@@ -60,8 +60,8 @@ fun TeamsManageScreen(
             if (teams.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { creating = true },
-                    containerColor = Lsl.Flame,
-                    contentColor = Lsl.FlameInk,
+                    containerColor = Lsl.Volt,
+                    contentColor = Lsl.VoltInk,
                     icon = { Icon(Icons.Default.Add, null) },
                     text = { Text("New team") },
                     modifier = Modifier.testTag("add_team_fab")
@@ -271,7 +271,7 @@ private fun TeamEditorSheet(
                 keyboardActions = KeyboardActions(onDone = { commitEntry() }),
                 trailingIcon = {
                     IconButton(onClick = { commitEntry() }, enabled = entry.isNotBlank()) {
-                        Icon(Icons.Default.PersonAdd, "Add player", tint = if (entry.isNotBlank()) Lsl.Flame else Lsl.Fade)
+                        Icon(Icons.Default.PersonAdd, "Add player", tint = if (entry.isNotBlank()) Lsl.Volt else Lsl.Fade)
                     }
                 },
                 colors = lslFieldColors(),
@@ -285,7 +285,7 @@ private fun TeamEditorSheet(
                             text = p.name,
                             selected = false,
                             onClick = { add(p.name); entry = "" },
-                            leading = { Icon(Icons.Default.Add, null, tint = Lsl.Flame, modifier = Modifier.size(16.dp)) }
+                            leading = { Icon(Icons.Default.Add, null, tint = Lsl.Volt, modifier = Modifier.size(16.dp)) }
                         )
                     }
                 }

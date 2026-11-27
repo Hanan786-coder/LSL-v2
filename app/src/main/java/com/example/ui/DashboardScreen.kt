@@ -110,15 +110,15 @@ fun DashboardScreen(
         // Navigation list with real counts
         item {
             Panel(contentPadding = PaddingValues(vertical = 4.dp)) {
-                NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Flame, onManageTeamsClick, Modifier.testTag("nav_teams"))
+                NavRow(Icons.Default.Groups, "Teams", countLabel(teams.size, "squad"), Lsl.Volt, onManageTeamsClick, Modifier.testTag("nav_teams"))
                 NavDivider()
                 NavRow(Icons.Default.Person, "Players", countLabel(saved.size, "saved player"), roleColor(com.example.data.PlayerRole.KEEPER), { viewModel.navigateTo("players") }, Modifier.testTag("nav_players"))
                 NavDivider()
                 NavRow(Icons.Default.EmojiEvents, "Tournaments", countLabel(tournaments.size, "league"), Lsl.Gold, onTournamentsClick, Modifier.testTag("nav_tournaments"))
                 NavDivider()
-                NavRow(Icons.Default.Leaderboard, "Player stats", countLabel(players.distinctBy { it.playerName }.size, "player"), Lsl.Sky, onLeaderboardClick, Modifier.testTag("nav_stats"))
+                NavRow(Icons.Default.Leaderboard, "Player stats", countLabel(players.distinctBy { it.playerName }.size, "player"), Lsl.Aqua, onLeaderboardClick, Modifier.testTag("nav_stats"))
                 NavDivider()
-                NavRow(Icons.Default.History, "Match history", countLabel(completed.size, "match", "matches"), Lsl.Violet, onHistoryClick, Modifier.testTag("nav_history"))
+                NavRow(Icons.Default.History, "Match history", countLabel(completed.size, "match", "matches"), Lsl.Mist, onHistoryClick, Modifier.testTag("nav_history"))
             }
         }
 
@@ -131,7 +131,7 @@ fun DashboardScreen(
                     if (completed.size > 3) {
                         Text(
                             "See all",
-                            color = Lsl.Flame,
+                            color = Lsl.Volt,
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).pressable(onClick = onHistoryClick).padding(8.dp)
                         )
@@ -195,13 +195,13 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(if (hasLive) Lsl.Deck else Lsl.Flame)
+            .background(if (hasLive) Lsl.Deck else Lsl.Volt)
             .pressable(pressedScale = 0.98f, onClick = onClick)
             .padding(20.dp)
             .testTag("hero_promo_card"),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val fg = if (hasLive) Lsl.Chalk else Lsl.FlameInk
+        val fg = if (hasLive) Lsl.Chalk else Lsl.VoltInk
         Column(Modifier.weight(1f)) {
             Text(
                 when {
@@ -222,13 +222,13 @@ private fun StartMatchPanel(canStart: Boolean, hasLive: Boolean, onClick: () -> 
         }
         Spacer(Modifier.width(12.dp))
         Box(
-            Modifier.size(52.dp).clip(CircleShape).background(if (hasLive) Lsl.Flame else Lsl.FlameInk),
+            Modifier.size(52.dp).clip(CircleShape).background(if (hasLive) Lsl.Volt else Lsl.VoltInk),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 if (canStart) Icons.Default.SportsCricket else Icons.Default.GroupAdd,
                 contentDescription = null,
-                tint = if (hasLive) Lsl.FlameInk else Lsl.Flame,
+                tint = if (hasLive) Lsl.VoltInk else Lsl.Volt,
                 modifier = Modifier.size(26.dp)
             )
         }

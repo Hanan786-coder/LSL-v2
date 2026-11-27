@@ -113,7 +113,7 @@ private fun ScoringScreenContent(
     val activeMatch = match
     if (activeMatch == null) {
         Box(Modifier.fillMaxSize().background(Lsl.Night), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Lsl.Flame)
+            CircularProgressIndicator(color = Lsl.Volt)
         }
         return
     }
@@ -157,7 +157,7 @@ private fun ScoringScreenContent(
             when (e) {
                 is ScoreEvent.Four, is ScoreEvent.Six, is ScoreEvent.Wicket -> {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    val c = when (e) { is ScoreEvent.Four -> Lsl.Gold; is ScoreEvent.Six -> Lsl.Sky; else -> Lsl.Tape }
+                    val c = when (e) { is ScoreEvent.Four -> Lsl.Gold; is ScoreEvent.Six -> Lsl.Volt; else -> Lsl.Tape }
                     if (!reduceMotion) {
                         burst = e; burstKey++
                         scope.launch {
@@ -176,7 +176,7 @@ private fun ScoringScreenContent(
                 }
                 is ScoreEvent.LastBatter -> banner = Banner(
                     "${e.batter} bats on alone. Last wicket ends the innings.",
-                    Icons.Default.PersonOutline, Lsl.Flame
+                    Icons.Default.PersonOutline, Lsl.Volt
                 )
                 is ScoreEvent.InningsBreak -> inningsBreak = e
             }
@@ -234,7 +234,7 @@ private fun ScoringScreenContent(
                         )
                     }
                     IconButton(onClick = onViewScorecardClick, modifier = Modifier.testTag("open_scorecard")) {
-                        Icon(Icons.Default.Leaderboard, "Full scorecard", tint = Lsl.Flame)
+                        Icon(Icons.Default.Leaderboard, "Full scorecard", tint = Lsl.Volt)
                     }
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
@@ -329,7 +329,7 @@ private fun ScoringScreenContent(
                             else -> "Leg byes. Tap the runs they ran."
                         },
                         style = MaterialTheme.typography.labelMedium,
-                        color = Lsl.Violet,
+                        color = Lsl.Aqua,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -456,7 +456,7 @@ private fun ScoringScreenContent(
             onDismissRequest = { inningsBreak = null },
             containerColor = Lsl.Deck,
             shape = RoundedCornerShape(28.dp),
-            icon = { Icon(Icons.Default.SportsCricket, null, tint = Lsl.Flame, modifier = Modifier.size(32.dp)) },
+            icon = { Icon(Icons.Default.SportsCricket, null, tint = Lsl.Volt, modifier = Modifier.size(32.dp)) },
             title = { Text("Innings break", style = MaterialTheme.typography.headlineSmall, color = Lsl.Chalk) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -465,7 +465,7 @@ private fun ScoringScreenContent(
                         fontFamily = Scoreboard,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 64.sp,
-                        color = Lsl.Flame
+                        color = Lsl.Volt
                     )
                     Text(
                         "${ib.chasingTeam} need ${ib.target} to win off ${activeMatch.overs * 6} balls",
@@ -568,7 +568,7 @@ private fun Scoreboard(
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Lsl.Flame)
+                    .background(Lsl.Volt)
             )
         }
 
@@ -768,7 +768,7 @@ private fun CreasePanel(
                     Icon(
                         Icons.Default.SwapVert,
                         contentDescription = "Swap strike",
-                        tint = Lsl.Flame,
+                        tint = Lsl.Volt,
                         modifier = Modifier.graphicsLayer { rotationZ = rot }
                     )
                 }
@@ -832,7 +832,7 @@ private fun LoneBatterRow(height: Dp) {
 
 @Composable
 private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, compact: Boolean, onClick: () -> Unit) {
-    val dot by animateColorAsState(if (striker) Lsl.Flame else Color.Transparent, tween(220), label = "strike-dot")
+    val dot by animateColorAsState(if (striker) Lsl.Volt else Color.Transparent, tween(220), label = "strike-dot")
     val nameColor by animateColorAsState(if (striker) Lsl.Chalk else Lsl.Mist, tween(220), label = "strike-name")
     Row(
         Modifier
@@ -846,7 +846,7 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
         Box(
             Modifier
                 .size(16.dp)
-                .border(1.5.dp, if (striker) Lsl.Flame else Lsl.Line, CircleShape)
+                .border(1.5.dp, if (striker) Lsl.Volt else Lsl.Line, CircleShape)
                 .padding(3.dp)
                 .clip(CircleShape)
                 .background(dot)
@@ -896,7 +896,7 @@ private fun BatterRow(name: String, stats: BatsmanLiveStats?, striker: Boolean, 
 
 @Composable
 private fun ExtraToggle(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val bg by animateColorAsState(if (selected) Lsl.Violet else Lsl.DeckRaised, tween(150), label = "x-bg")
+    val bg by animateColorAsState(if (selected) Lsl.Aqua else Lsl.DeckRaised, tween(150), label = "x-bg")
     val fg by animateColorAsState(if (selected) Lsl.Night else Lsl.Chalk, tween(150), label = "x-fg")
     Box(
         modifier
@@ -934,7 +934,7 @@ private fun Keypad(
         }
         Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             RunKey("4", "four", Lsl.Gold, Lsl.Night, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(4) }
-            RunKey("6", "six", Lsl.Sky, Lsl.Night, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(6) }
+            RunKey("6", "six", Lsl.Volt, Lsl.VoltInk, armedExtra != null, Modifier.weight(1f).fillMaxHeight()) { onRuns(6) }
             RunKey("5", "five", Lsl.DeckRaised, Lsl.Chalk, armedExtra != null, Modifier.weight(0.7f).fillMaxHeight()) { onRuns(5) }
             RunKey("Out", "wicket", Lsl.Tape, Lsl.Night, false, Modifier.weight(1.3f).fillMaxHeight(), onClick = onWicket)
         }
@@ -952,7 +952,7 @@ private fun RunKey(
     onClick: () -> Unit
 ) {
     // Armed extras tint the run keys lilac so it's obvious the next tap is an extra
-    val ring by animateColorAsState(if (armed) Lsl.Violet else Color.Transparent, tween(150), label = "key-ring")
+    val ring by animateColorAsState(if (armed) Lsl.Aqua else Color.Transparent, tween(150), label = "key-ring")
     BoxWithConstraints(
         modifier
             .heightIn(min = 56.dp, max = 120.dp)
@@ -989,7 +989,7 @@ private fun CelebrationBurst(event: ScoreEvent?, key: Int, modifier: Modifier) {
     if (event == null) return
     val (text, color) = when (event) {
         is ScoreEvent.Four -> "Four!" to Lsl.Gold
-        is ScoreEvent.Six -> "Six!" to Lsl.Sky
+        is ScoreEvent.Six -> "Six!" to Lsl.Volt
         is ScoreEvent.Wicket -> "Out!" to Lsl.Tape
         else -> return
     }
@@ -1079,7 +1079,7 @@ private fun WicketSheet(
                 Text(
                     "Recorded on a ${ExtraTypes.first { it.first == armedExtra }.second.lowercase()}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Lsl.Violet
+                    color = Lsl.Aqua
                 )
             }
 
@@ -1163,7 +1163,7 @@ private fun WicketSheet(
                 survivor != null -> Text(
                     "$survivor bats on alone.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Lsl.Flame
+                    color = Lsl.Volt
                 )
                 else -> Text(
                     "Last batter. This wicket ends the innings.",
@@ -1232,7 +1232,7 @@ private fun BowlerSheet(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (name == current && !blocked) Lsl.Flame.copy(alpha = 0.14f) else Lsl.DeckRaised)
+                            .background(if (name == current && !blocked) Lsl.Volt.copy(alpha = 0.14f) else Lsl.DeckRaised)
                             .pressable(enabled = !blocked) { onPick(name) }
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1412,7 +1412,7 @@ private fun EditBallsSheet(
                     SectionTitle("Extra")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         ChoiceChip("None", extra == null, { extra = null })
-                        ExtraTypes.forEach { (k, l) -> ChoiceChip(l, extra == k, { extra = k }, accent = Lsl.Violet) }
+                        ExtraTypes.forEach { (k, l) -> ChoiceChip(l, extra == k, { extra = k }, accent = Lsl.Aqua) }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Switch(
@@ -1450,7 +1450,7 @@ private fun EditBallsSheet(
                     )
                     onSave(iv.index, edited)
                     editing = null
-                }) { Text("Save ball", color = Lsl.Flame, fontWeight = FontWeight.Bold) }
+                }) { Text("Save ball", color = Lsl.Volt, fontWeight = FontWeight.Bold) }
             },
             dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel", color = Lsl.Mist) } }
         )

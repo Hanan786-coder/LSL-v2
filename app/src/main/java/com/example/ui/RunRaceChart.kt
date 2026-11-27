@@ -130,8 +130,8 @@ fun RunRaceChart(
         }
         Spacer(Modifier.height(6.dp))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            ReadoutCell(firstName, Lsl.Flame, pa)
-            ReadoutCell(secondName, Lsl.Sky, pb)
+            ReadoutCell(firstName, Lsl.Volt, pa)
+            ReadoutCell(secondName, Lsl.Aqua, pb)
         }
         Spacer(Modifier.height(12.dp))
 
@@ -228,15 +228,15 @@ fun RunRaceChart(
                     }
                 }
             }
-            drawRace(a, Lsl.Flame)
-            drawRace(b, Lsl.Sky)
+            drawRace(a, Lsl.Volt)
+            drawRace(b, Lsl.Aqua)
         }
 
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            LegendLine(Lsl.Flame, firstName)
+            LegendLine(Lsl.Volt, firstName)
             Spacer(Modifier.width(14.dp))
-            LegendLine(Lsl.Sky, secondName)
+            LegendLine(Lsl.Aqua, secondName)
             Spacer(Modifier.width(14.dp))
             Box(Modifier.size(8.dp).clip(CircleShape).background(Lsl.Tape))
             Text(" wicket", style = MaterialTheme.typography.labelSmall, color = Lsl.Mist)

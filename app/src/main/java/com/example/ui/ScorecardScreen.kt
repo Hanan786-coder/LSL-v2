@@ -90,7 +90,7 @@ private fun ScorecardContent(
                 copyToClipboard(context, text)
             }) { Icon(Icons.Default.ContentCopy, "Copy summary", tint = Lsl.Mist) }
             IconButton(onClick = { shareText(context, summaryText(m, firstName, secondName, first, second)) }) {
-                Icon(Icons.Default.Share, "Share summary", tint = Lsl.Flame)
+                Icon(Icons.Default.Share, "Share summary", tint = Lsl.Volt)
             }
         }
     ) { inner ->
@@ -219,7 +219,7 @@ private fun SummaryTab(
             QuietButton(
                 text = "Share scorecard",
                 icon = Icons.Default.Share,
-                tint = Lsl.Flame,
+                tint = Lsl.Volt,
                 height = 52.dp,
                 onClick = onShare,
                 modifier = Modifier.fillMaxWidth()
@@ -248,7 +248,7 @@ private fun ResultBanner(match: MatchEntity) {
         Icon(
             if (done) Icons.Default.EmojiEvents else Icons.Default.SportsCricket,
             contentDescription = null,
-            tint = if (done) Lsl.Gold else Lsl.Flame,
+            tint = if (done) Lsl.Gold else Lsl.Volt,
             modifier = Modifier.size(40.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value }
         )
         Spacer(Modifier.height(8.dp))
@@ -328,7 +328,7 @@ private fun InningsTab(teamName: String, card: InningsScorecard) {
                     TableRow(
                         title = b.name,
                         subtitle = if (b.isOut) dismissalText(b) else "not out",
-                        subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Flame,
+                        subtitleColor = if (b.isOut) Lsl.Fade else Lsl.Volt,
                         values = listOf("${b.runs}", "${b.ballsFaced}", "${b.fours}", "${b.sixes}", b.strikeRate.fmt(0)),
                         widths = BatCols,
                         emphasizeFirst = true

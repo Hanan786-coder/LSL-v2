@@ -178,8 +178,8 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    color: Color = Lsl.Flame,
-    contentColor: Color = Lsl.FlameInk,
+    color: Color = Lsl.Volt,
+    contentColor: Color = Lsl.VoltInk,
     height: Dp = 52.dp
 ) {
     val bg by animateColorAsState(if (enabled) color else Lsl.DeckRaised, label = "btn-bg")
@@ -241,7 +241,7 @@ fun ChoiceChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    accent: Color = Lsl.Flame,
+    accent: Color = Lsl.Volt,
     leading: (@Composable () -> Unit)? = null
 ) {
     val bg by animateColorAsState(if (selected) accent else Lsl.DeckRaised, tween(160), label = "chip-bg")
@@ -278,9 +278,9 @@ data class BallTone(val bg: Color, val fg: Color)
 
 fun ballTone(label: String): BallTone = when {
     label.startsWith("W") -> BallTone(Lsl.Tape, Lsl.Night)
-    label.endsWith("wd") || label.endsWith("nb") -> BallTone(Lsl.Violet.copy(alpha = 0.22f), Lsl.Violet)
-    label.endsWith("lb") || label.endsWith("b") -> BallTone(Lsl.Violet.copy(alpha = 0.12f), Lsl.Violet)
-    label == "6" -> BallTone(Lsl.Sky, Lsl.Night)
+    label.endsWith("wd") || label.endsWith("nb") -> BallTone(Lsl.Aqua.copy(alpha = 0.22f), Lsl.Aqua)
+    label.endsWith("lb") || label.endsWith("b") -> BallTone(Lsl.Aqua.copy(alpha = 0.12f), Lsl.Aqua)
+    label == "6" -> BallTone(Lsl.Volt, Lsl.VoltInk)
     label == "4" -> BallTone(Lsl.Gold, Lsl.Night)
     label == "0" -> BallTone(Lsl.DeckRaised, Lsl.Mist)
     else -> BallTone(Lsl.Chalk.copy(alpha = 0.12f), Lsl.Chalk)
@@ -316,8 +316,8 @@ fun BallChip(label: String, modifier: Modifier = Modifier, size: Dp = 34.dp) {
 // ---------------------------------------------------------------------------
 
 private val monogramColors = listOf(
-    Color(0xFFFF7A2F), Color(0xFFFFC53D), Color(0xFF5CC8FF), Color(0xFF7EE08A),
-    Color(0xFFB69CFF), Color(0xFFFF8FB1), Color(0xFF4FD8C4), Color(0xFFF2B880)
+    Color(0xFF8BF108), Color(0xFF2FCFC4), Color(0xFF00C27A), Color(0xFFFFC53D),
+    Color(0xFFA6B8BF), Color(0xFF7FE3B8), Color(0xFF3BA9C9), Color(0xFFC6EF7A)
 )
 
 fun teamColor(name: String): Color =
@@ -377,7 +377,7 @@ fun EmptyState(
                 .background(Lsl.DeckRaised),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Lsl.Flame, modifier = Modifier.size(30.dp))
+            Icon(icon, contentDescription = null, tint = Lsl.Volt, modifier = Modifier.size(30.dp))
         }
         Spacer(Modifier.height(16.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Lsl.Chalk, textAlign = TextAlign.Center)
@@ -417,7 +417,7 @@ fun ConfirmDialog(
         text = { Text(body, style = MaterialTheme.typography.bodyMedium, color = Lsl.Mist) },
         confirmButton = {
             TextButton(onClick = { onConfirm(); onDismiss() }) {
-                Text(confirmText, color = if (destructive) Lsl.Tape else Lsl.Flame, fontWeight = FontWeight.Bold)
+                Text(confirmText, color = if (destructive) Lsl.Tape else Lsl.Volt, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -428,14 +428,14 @@ fun ConfirmDialog(
 
 @Composable
 fun lslFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Lsl.Flame,
+    focusedBorderColor = Lsl.Volt,
     unfocusedBorderColor = Lsl.Line,
-    focusedLabelColor = Lsl.Flame,
+    focusedLabelColor = Lsl.Volt,
     unfocusedLabelColor = Lsl.Mist,
     focusedTextColor = Lsl.Chalk,
     unfocusedTextColor = Lsl.Chalk,
-    cursorColor = Lsl.Flame,
-    focusedLeadingIconColor = Lsl.Flame,
+    cursorColor = Lsl.Volt,
+    focusedLeadingIconColor = Lsl.Volt,
     unfocusedLeadingIconColor = Lsl.Mist,
     focusedContainerColor = Lsl.Deck,
     unfocusedContainerColor = Lsl.Deck,
@@ -497,10 +497,10 @@ val CenteredLabel = androidx.compose.ui.text.TextStyle(
 )
 
 fun roleColor(role: com.example.data.PlayerRole): Color = when (role) {
-    com.example.data.PlayerRole.BATTER -> Lsl.Flame
-    com.example.data.PlayerRole.BOWLER -> Lsl.Sky
-    com.example.data.PlayerRole.ALL_ROUNDER -> Color(0xFFC8A6FF)
-    com.example.data.PlayerRole.KEEPER -> Color(0xFF7EE08A)
+    com.example.data.PlayerRole.BATTER -> Lsl.Volt
+    com.example.data.PlayerRole.BOWLER -> Lsl.Aqua
+    com.example.data.PlayerRole.ALL_ROUNDER -> Lsl.Mist
+    com.example.data.PlayerRole.KEEPER -> Lsl.Grass
     com.example.data.PlayerRole.UNSET -> Lsl.Fade
 }
 

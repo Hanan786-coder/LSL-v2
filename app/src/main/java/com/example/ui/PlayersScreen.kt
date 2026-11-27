@@ -57,8 +57,8 @@ fun PlayersScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { adding = true },
-                containerColor = Lsl.Flame,
-                contentColor = Lsl.FlameInk,
+                containerColor = Lsl.Volt,
+                contentColor = Lsl.VoltInk,
                 icon = { Icon(Icons.Default.PersonAdd, null) },
                 text = { Text("Add player") },
                 modifier = Modifier.testTag("add_player_fab")
@@ -161,7 +161,7 @@ fun PlayersScreen(
             confirmButton = {
                 val ok = name.isNotBlank() && !exists
                 TextButton(onClick = { viewModel.addPlayer(name); adding = false }, enabled = ok) {
-                    Text("Save player", color = if (ok) Lsl.Flame else Lsl.Fade, fontWeight = FontWeight.Bold)
+                    Text("Save player", color = if (ok) Lsl.Volt else Lsl.Fade, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel", color = Lsl.Mist) } }
@@ -177,7 +177,7 @@ fun PlayersScreen(
                 shape = RoundedCornerShape(24.dp),
                 title = { Text("${p.name} is in $teamCount team${if (teamCount == 1) "" else "s"}", style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk) },
                 text = { Text("Remove them from those squads first.", color = Lsl.Mist) },
-                confirmButton = { TextButton(onClick = { deleting = null }) { Text("OK", color = Lsl.Flame) } }
+                confirmButton = { TextButton(onClick = { deleting = null }) { Text("OK", color = Lsl.Volt) } }
             )
         } else {
             ConfirmDialog(

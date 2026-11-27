@@ -84,7 +84,7 @@ fun SplashScreen(onSplashDone: () -> Unit) {
                         .fillMaxHeight()
                         .fillMaxWidth(rule.value)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(Lsl.Flame)
+                        .background(Lsl.Volt)
                 )
             }
             Spacer(Modifier.height(12.dp))

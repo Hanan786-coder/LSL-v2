@@ -71,8 +71,8 @@ fun TournamentScreen(
                     if (tournaments.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             onClick = { showCreate = true },
-                            containerColor = Lsl.Flame,
-                            contentColor = Lsl.FlameInk,
+                            containerColor = Lsl.Volt,
+                            contentColor = Lsl.VoltInk,
                             icon = { Icon(Icons.Default.Add, null) },
                             text = { Text("New league") },
                             modifier = Modifier.testTag("add_tournament_fab")
@@ -157,7 +157,7 @@ fun TournamentScreen(
                 TextButton(onClick = {
                     if (name.isNotBlank()) { viewModel.createTournament(name); showCreate = false }
                 }, enabled = name.isNotBlank()) {
-                    Text("Create league", color = if (name.isNotBlank()) Lsl.Flame else Lsl.Fade, fontWeight = FontWeight.Bold)
+                    Text("Create league", color = if (name.isNotBlank()) Lsl.Volt else Lsl.Fade, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel", color = Lsl.Mist) } }
@@ -249,7 +249,7 @@ private fun TournamentDetail(
         subtitle = "${tTeams.size} teams, ${tMatches.count { it.status == "COMPLETED" }} of ${fixtures.size} fixtures played",
         onBack = onBack,
         actions = {
-            IconButton(onClick = { addingTeams = true }) { Icon(Icons.Default.GroupAdd, "Add teams", tint = Lsl.Flame) }
+            IconButton(onClick = { addingTeams = true }) { Icon(Icons.Default.GroupAdd, "Add teams", tint = Lsl.Volt) }
         }
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
@@ -294,7 +294,7 @@ private fun TournamentDetail(
                             Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(if (inThis) Lsl.Flame.copy(alpha = 0.14f) else Lsl.DeckRaised)
+                                .background(if (inThis) Lsl.Volt.copy(alpha = 0.14f) else Lsl.DeckRaised)
                                 .pressable {
                                     viewModel.setTeamTournament(team, if (inThis) null else tournament.id)
                                 }
@@ -307,7 +307,7 @@ private fun TournamentDetail(
                             Icon(
                                 if (inThis) Icons.Default.CheckCircle else Icons.Default.AddCircleOutline,
                                 contentDescription = if (inThis) "In league" else "Not in league",
-                                tint = if (inThis) Lsl.Flame else Lsl.Fade
+                                tint = if (inThis) Lsl.Volt else Lsl.Fade
                             )
                         }
                     }
@@ -366,7 +366,7 @@ private fun PointsTable(table: List<PointsTableRow>) {
                     Text(
                         (if (r.netRunRate >= 0) "+" else "") + r.netRunRate.fmt(2),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (r.netRunRate >= 0) Lsl.Flame else Lsl.Tape,
+                        color = if (r.netRunRate >= 0) Lsl.Volt else Lsl.Tape,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(54.dp)
                     )
@@ -376,7 +376,7 @@ private fun PointsTable(table: List<PointsTableRow>) {
                         r.form.forEach { c ->
                             Box(
                                 Modifier.size(18.dp).clip(CircleShape).background(
-                                    when (c) { 'W' -> Lsl.Flame; 'L' -> Lsl.Tape; else -> Lsl.Fade }
+                                    when (c) { 'W' -> Lsl.Volt; 'L' -> Lsl.Tape; else -> Lsl.Fade }
                                 ),
                                 contentAlignment = Alignment.Center
                             ) {

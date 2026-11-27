@@ -166,7 +166,7 @@ fun MatchSetupScreen(
                     Text(
                         s,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (problem == null) Lsl.Flame else Lsl.Mist,
+                        color = if (problem == null) Lsl.Volt else Lsl.Mist,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
@@ -246,10 +246,10 @@ fun MatchSetupScreen(
 private fun StepHeader(n: Int, title: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
         Box(
-            Modifier.size(26.dp).clip(CircleShape).border(1.5.dp, Lsl.Flame, CircleShape),
+            Modifier.size(26.dp).clip(CircleShape).border(1.5.dp, Lsl.Volt, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text("$n", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Lsl.Flame)
+            Text("$n", fontFamily = Scoreboard, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Lsl.Volt)
         }
         Spacer(Modifier.width(10.dp))
         Text(title, style = MaterialTheme.typography.titleLarge, color = Lsl.Chalk)
@@ -275,7 +275,7 @@ private fun TeamSlot(team: TeamEntity?, placeholder: String, modifier: Modifier,
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (t == null) {
                     Box(Modifier.size(52.dp).clip(CircleShape).background(Lsl.DeckRaised), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Add, null, tint = Lsl.Flame)
+                        Icon(Icons.Default.Add, null, tint = Lsl.Volt)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(placeholder, style = MaterialTheme.typography.titleSmall, color = Lsl.Mist)
