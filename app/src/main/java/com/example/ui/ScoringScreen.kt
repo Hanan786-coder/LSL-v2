@@ -1131,7 +1131,8 @@ private fun WicketSheet(
                                 },
                                 selected = fielder == f,
                                 onClick = { fielder = if (fielder == f) null else f },
-                                leading = { Monogram(f, size = 22.dp) }
+                                // On the volt selected chip, ink the monogram so it never matches the chip
+                                leading = { Monogram(f, size = 22.dp, color = if (fielder == f) Lsl.VoltInk else teamColor(f)) }
                             )
                         }
                     }
